@@ -49,8 +49,12 @@ class _CartPageState extends State<CartPage> {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text('Varian: ${item.variant.namaVarian}'),
-                          Text('Jenis harga: ${item.price.jenisHarga}'),
+                          Text(
+                            'Varian: ${item.variant.namaVarian}',
+                          ),
+                          Text(
+                            'Jenis harga: ${item.price.jenisHarga}',
+                          ),
                           Text(
                             'Harga satuan: Rp ${item.price.harga}',
                           ),
@@ -91,9 +95,11 @@ class _CartPageState extends State<CartPage> {
                               IconButton(
                                 tooltip: 'Hapus item',
                                 onPressed: () {
-                                  _removeItem(
+                                  _confirmRemoveItem(
                                     item.variant.idVarian,
                                     item.price.idDaftarHarga,
+                                    item.product.namaProduk,
+                                    item.variant.namaVarian,
                                   );
                                 },
                                 icon: const Icon(
@@ -182,7 +188,11 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  void _updateQuantity(int variantId, int priceId, int quantity) {
+  void _updateQuantity(
+    int variantId,
+    int priceId,
+    int quantity,
+  ) {
     setState(() {
       CartService.updateQuantity(
         variantId: variantId,
@@ -192,7 +202,41 @@ class _CartPageState extends State<CartPage> {
     });
   }
 
-  void _removeItem(int variantId, int priceId) {
+  Future<void> _confirmRemoveItem(
+    int variantId,
+    int priceId,
+    String productName,
+    String variantName,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus item?'),
+        content: Text(
+          'Apakah kamu yakin ingin menghapus '
+          '$productName - $variantName dari keranjang?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext, false);
+            },
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext, true);
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
     setState(() {
       CartService.removeItem(
         variantId: variantId,
@@ -201,7 +245,9 @@ class _CartPageState extends State<CartPage> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Item dihapus dari keranjang.')),
+      const SnackBar(
+        content: Text('Item dihapus dari keranjang.'),
+      ),
     );
   }
 
@@ -215,11 +261,15 @@ class _CartPageState extends State<CartPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
+            onPressed: () {
+              Navigator.pop(dialogContext, false);
+            },
             child: const Text('Batal'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
+            onPressed: () {
+              Navigator.pop(dialogContext, true);
+            },
             child: const Text('Kosongkan'),
           ),
         ],

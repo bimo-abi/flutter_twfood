@@ -22,10 +22,8 @@ class _AddressPageState extends State<AddressPage> {
     _addressesFuture = AddressService.getAddresses();
   }
 
-  // ============================================================
-  // REFRESH ALAMAT
-  // ============================================================
 
+  // REFRESH ALAMAT
   Future<void> _refreshAddresses() async {
     setState(() {
       _addressesFuture = AddressService.getAddresses();
@@ -34,10 +32,8 @@ class _AddressPageState extends State<AddressPage> {
     await _addressesFuture;
   }
 
-  // ============================================================
-  // TAMBAH ALAMAT
-  // ============================================================
 
+  // TAMBAH ALAMAT
   Future<void> _openAddAddressPage() async {
     final result = await Navigator.push(
       context,
@@ -51,10 +47,7 @@ class _AddressPageState extends State<AddressPage> {
     }
   }
 
-  // ============================================================
   // EDIT ALAMAT
-  // ============================================================
-
   Future<void> _openEditAddressPage(
     Address address,
   ) async {
@@ -72,10 +65,7 @@ class _AddressPageState extends State<AddressPage> {
     }
   }
 
-  // ============================================================
   // HAPUS ALAMAT
-  // ============================================================
-
   Future<void> _deleteAddress(
     Address address,
   ) async {
@@ -145,10 +135,7 @@ class _AddressPageState extends State<AddressPage> {
     }
   }
 
-  // ============================================================
   // BUILD
-  // ============================================================
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -165,10 +152,8 @@ class _AddressPageState extends State<AddressPage> {
       body: FutureBuilder<List<Address>>(
         future: _addressesFuture,
         builder: (context, snapshot) {
-          // ======================================================
-          // LOADING
-          // ======================================================
 
+          // LOADING
           if (snapshot.connectionState ==
               ConnectionState.waiting) {
             return const Center(
@@ -176,10 +161,7 @@ class _AddressPageState extends State<AddressPage> {
             );
           }
 
-          // ======================================================
           // ERROR
-          // ======================================================
-
           if (snapshot.hasError) {
             return Center(
               child: Padding(
@@ -219,16 +201,10 @@ class _AddressPageState extends State<AddressPage> {
             );
           }
 
-          // ======================================================
           // DATA
-          // ======================================================
-
           final addresses = snapshot.data ?? [];
 
-          // ======================================================
           // BELUM ADA ALAMAT
-          // ======================================================
-
           if (addresses.isEmpty) {
             return RefreshIndicator(
               onRefresh: _refreshAddresses,
@@ -265,10 +241,7 @@ class _AddressPageState extends State<AddressPage> {
             );
           }
 
-          // ======================================================
           // DAFTAR ALAMAT
-          // ======================================================
-
           return RefreshIndicator(
             onRefresh: _refreshAddresses,
             child: ListView.builder(
@@ -286,10 +259,7 @@ class _AddressPageState extends State<AddressPage> {
     );
   }
 
-  // ============================================================
   // CARD ALAMAT
-  // ============================================================
-
   Widget _buildAddressCard(
     Address address,
   ) {
@@ -303,10 +273,8 @@ class _AddressPageState extends State<AddressPage> {
           crossAxisAlignment:
               CrossAxisAlignment.start,
           children: [
-            // ====================================================
-            // LABEL + UTAMA
-            // ====================================================
 
+            // LABEL + UTAMA
             Row(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
@@ -354,10 +322,7 @@ class _AddressPageState extends State<AddressPage> {
 
             const SizedBox(height: 14),
 
-            // ====================================================
-            // NAMA PENERIMA
-            // ====================================================
-
+           //nama penerima
             Text(
               address.namaPenerima,
               style: const TextStyle(
@@ -368,10 +333,7 @@ class _AddressPageState extends State<AddressPage> {
 
             const SizedBox(height: 4),
 
-            // ====================================================
-            // NOMOR TELEPON
-            // ====================================================
-
+            //nomor telepon
             Text(
               address.nomorTelepon,
               style: const TextStyle(
@@ -381,10 +343,7 @@ class _AddressPageState extends State<AddressPage> {
 
             const SizedBox(height: 12),
 
-            // ====================================================
-            // ALAMAT LENGKAP
-            // ====================================================
-
+            //alamat lengkap
             Text(
               address.alamatLengkap,
               style: const TextStyle(
@@ -395,10 +354,7 @@ class _AddressPageState extends State<AddressPage> {
 
             const SizedBox(height: 8),
 
-            // ====================================================
-            // KOTA / PROVINSI / KODE POS
-            // ====================================================
-
+            //kota, provinsi, kode pos
             Text(
               '${address.kota}, '
               '${address.provinsi} '
@@ -409,10 +365,7 @@ class _AddressPageState extends State<AddressPage> {
               ),
             ),
 
-            // ====================================================
-            // KOORDINAT
-            // ====================================================
-
+            // Koordinat
             if (address.latitude != null &&
                 address.longitude != null) ...[
               const SizedBox(height: 10),
@@ -439,18 +392,13 @@ class _AddressPageState extends State<AddressPage> {
 
             const SizedBox(height: 14),
 
-            // ====================================================
-            // TOMBOL EDIT + HAPUS
-            // ====================================================
-
+            // TOMBOL EDIT DAN HAPUS
             Row(
               mainAxisAlignment:
                   MainAxisAlignment.end,
               children: [
-                // ------------------------------------------------
-                // TOMBOL EDIT
-                // ------------------------------------------------
 
+                //tombol edit
                 OutlinedButton.icon(
                   onPressed: () {
                     _openEditAddressPage(
@@ -467,10 +415,7 @@ class _AddressPageState extends State<AddressPage> {
 
                 const SizedBox(width: 8),
 
-                // ------------------------------------------------
-                // TOMBOL HAPUS
-                // ------------------------------------------------
-
+                //tombol hapus
                 OutlinedButton.icon(
                   onPressed: () {
                     _deleteAddress(
