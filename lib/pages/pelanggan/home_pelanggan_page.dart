@@ -8,6 +8,7 @@ import 'outlet_page.dart';
 import 'product_page.dart';
 import 'profile_page.dart';
 import 'recipe_page.dart';
+import 'cart_page.dart';
 
 class HomePelangganPage extends StatefulWidget {
   const HomePelangganPage({super.key});
@@ -74,7 +75,7 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
           _buildHomeContent(),
           const ProductPage(),
           const PesananPlaceholderPage(),
-          const KeranjangPlaceholderPage(),
+          const CartPage(),
           const RecipePage(),
           const ProfilePage(),
         ],
