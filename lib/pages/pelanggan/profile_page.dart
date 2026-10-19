@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/token_storage.dart';
 import '../auth/login_page.dart';
 import 'address_page.dart';
+import '../../services/cart_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -72,42 +73,49 @@ class _ProfilePageState extends State<ProfilePage> {
       final response = await AuthService.logout();
 
       await TokenStorage.deleteToken();
+      CartService.resetSession();
 
       if (!mounted) {
         return;
       }
 
-      if (response.statusCode == 200) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-          (route) => false,
-        );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
 
-        return;
+      if (response.statusCode != 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Logout server gagal (${response.statusCode}), '
+              'tetapi sesi lokal sudah dihapus.',
+            ),
+          ),
+        );
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Logout server gagal '
-            '(${response.statusCode}), '
-            'tetapi token lokal sudah dihapus.',
-          ),
-        ),
-      );
+      return;
     } catch (e) {
       await TokenStorage.deleteToken();
+      CartService.resetSession();
 
       if (!mounted) {
         return;
       }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Tidak dapat menghubungi server. '
-            'Token lokal sudah dihapus. $e',
+            'Sesi lokal sudah dihapus.',
           ),
         ),
       );

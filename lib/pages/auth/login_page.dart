@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'register_page.dart';
 import '../../pages/pelanggan/home_pelanggan_page.dart';
 import '../../services/auth_service.dart';
+import '../../services/cart_service.dart';
 import '../../services/token_storage.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,9 +18,11 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _emailController =
+      TextEditingController();
 
-  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _passwordController =
+      TextEditingController();
 
   bool _obscurePassword = true;
 
@@ -27,7 +30,6 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-
     super.dispose();
   }
 
@@ -46,9 +48,7 @@ class _LoginPageState extends State<LoginPage> {
         kataSandi: _passwordController.text,
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       final data = jsonDecode(response.body);
 
@@ -62,23 +62,22 @@ class _LoginPageState extends State<LoginPage> {
         final peran = userData['peran'];
         final token = userData['token'];
 
-        // Pastikan token tersedia
+        // Pastikan token tersedia.
         if (token is! String || token.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Login berhasil, tetapi token tidak ditemukan.'),
+              content: Text(
+                'Login berhasil, tetapi token tidak ditemukan.',
+              ),
             ),
           );
-
           return;
         }
 
-        // Simpan token
+        // Simpan token autentikasi.
         await TokenStorage.saveToken(token);
 
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
 
         debugPrint('Role pengguna: $peran');
         debugPrint('Token berhasil disimpan.');
@@ -88,9 +87,69 @@ class _LoginPageState extends State<LoginPage> {
         // ======================================================
 
         if (peran == 'pelanggan') {
+          try {
+            // Ambil data pengguna dari Laravel menggunakan token.
+            final meResponse = await AuthService.me();
+
+            if (meResponse.statusCode != 200) {
+              throw Exception(
+                'Gagal mengambil profil '
+                '(HTTP ${meResponse.statusCode}).',
+              );
+            }
+
+            final meData = jsonDecode(meResponse.body);
+
+            if (meData is! Map<String, dynamic> ||
+                meData['data'] is! Map<String, dynamic>) {
+              throw const FormatException(
+                'Format profil pengguna tidak valid.',
+              );
+            }
+
+            // Ambil ID pengguna dari response /me.
+            final rawUserId =
+                meData['data']['id_pengguna'];
+
+            final userId = rawUserId is int
+                ? rawUserId
+                : int.tryParse(
+                    rawUserId?.toString() ?? '',
+                  );
+
+            if (userId == null || userId <= 0) {
+              throw const FormatException(
+                'ID pengguna tidak valid.',
+              );
+            }
+
+            // Muat keranjang milik pengguna yang login.
+            await CartService.initializeForUser(userId);
+          } catch (e) {
+            // Batalkan persiapan sesi jika gagal.
+            CartService.resetSession();
+            await TokenStorage.deleteToken();
+
+            if (!mounted) return;
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Gagal menyiapkan sesi pelanggan: $e',
+                ),
+              ),
+            );
+            return;
+          }
+
+          if (!mounted) return;
+
+          // Masuk ke halaman utama setelah keranjang dimuat.
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HomePelangganPage()),
+            MaterialPageRoute(
+              builder: (context) => const HomePelangganPage(),
+            ),
           );
 
           return;
@@ -109,7 +168,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           );
-
           return;
         }
 
@@ -118,7 +176,11 @@ class _LoginPageState extends State<LoginPage> {
         // ======================================================
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Role pengguna tidak dikenali: $peran')),
+          SnackBar(
+            content: Text(
+              'Role pengguna tidak dikenali: $peran',
+            ),
+          ),
         );
 
         return;
@@ -130,9 +192,10 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 401) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email atau password salah.')),
+          const SnackBar(
+            content: Text('Email atau password salah.'),
+          ),
         );
-
         return;
       }
 
@@ -141,9 +204,11 @@ class _LoginPageState extends State<LoginPage> {
       // ========================================================
 
       if (response.statusCode == 403) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Akun tidak aktif.')));
-
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Akun tidak aktif.'),
+          ),
+        );
         return;
       }
 
@@ -153,19 +218,23 @@ class _LoginPageState extends State<LoginPage> {
 
       String message = 'Login gagal.';
 
-      if (data is Map<String, dynamic> && data['message'] != null) {
+      if (data is Map<String, dynamic> &&
+          data['message'] != null) {
         message = data['message'].toString();
       }
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tidak dapat terhubung ke server: $e')),
+        SnackBar(
+          content: Text(
+            'Tidak dapat terhubung ke server: $e',
+          ),
+        ),
       );
     }
   }
@@ -177,14 +246,22 @@ class _LoginPageState extends State<LoginPage> {
   void _goToRegister() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const RegisterPage()),
+      MaterialPageRoute(
+        builder: (context) => const RegisterPage(),
+      ),
     );
   }
+
+  // ============================================================
+  // TAMPILAN LOGIN
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login TWFOOD')),
+      appBar: AppBar(
+        title: const Text('Login TWFOOD'),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -195,20 +272,20 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const SizedBox(height: 30),
 
-                // ==================================================
-                // ICON
-                // ==================================================
-                const Icon(Icons.fastfood_outlined, size: 70),
+                const Icon(
+                  Icons.fastfood_outlined,
+                  size: 70,
+                ),
 
                 const SizedBox(height: 20),
 
-                // ==================================================
-                // TITLE
-                // ==================================================
                 const Text(
                   'Selamat Datang',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
 
                 const SizedBox(height: 8),
@@ -216,14 +293,15 @@ class _LoginPageState extends State<LoginPage> {
                 const Text(
                   'Login ke akun TWFOOD Anda',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
                 ),
 
                 const SizedBox(height: 35),
 
-                // ==================================================
                 // EMAIL
-                // ==================================================
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -234,11 +312,14 @@ class _LoginPageState extends State<LoginPage> {
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
+                    if (value == null ||
+                        value.trim().isEmpty) {
                       return 'Email wajib diisi.';
                     }
 
-                    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    final emailRegex = RegExp(
+                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                    );
 
                     if (!emailRegex.hasMatch(value.trim())) {
                       return 'Format email tidak valid.';
@@ -250,16 +331,16 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 18),
 
-                // ==================================================
                 // PASSWORD
-                // ==================================================
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     labelText: 'Password',
                     hintText: 'Masukkan password',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -268,7 +349,8 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       onPressed: () {
                         setState(() {
-                          _obscurePassword = !_obscurePassword;
+                          _obscurePassword =
+                              !_obscurePassword;
                         });
                       },
                     ),
@@ -285,9 +367,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 28),
 
-                // ==================================================
-                // LOGIN BUTTON
-                // ==================================================
+                // TOMBOL LOGIN
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
@@ -304,9 +384,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 20),
 
-                // ==================================================
-                // REGISTER
-                // ==================================================
+                // NAVIGASI REGISTER
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
