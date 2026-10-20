@@ -27,6 +27,19 @@ class _ProfilePageState extends State<ProfilePage> {
     _userFuture = _loadUser();
   }
 
+  String _getStatusVerifikasi(String? status) {
+    switch (status) {
+      case 'menunggu_verifikasi':
+        return 'Menunggu Verifikasi';
+      case 'disetujui':
+        return 'Disetujui';
+      case 'ditolak':
+        return 'Ditolak';
+      default:
+        return 'Belum Tersedia';
+    }
+  }
+
   Future<User> _loadUser() async {
     final response = await AuthService.me();
 
@@ -214,10 +227,20 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 28),
 
                 _buildProfileField(
-                  icon: Icons.person_outline,
-                  label: 'Nama',
-                  value: user.nama,
+                  icon: Icons.check_circle_outline,
+                  label: 'Status Akun',
+                  value: user.statusAktif == true ? 'Aktif' : 'Tidak Aktif',
                 ),
+
+                if ([
+                  'toko',
+                  'horeca',
+                ].contains(user.jenisPelanggan.trim().toLowerCase()))
+                  _buildProfileField(
+                    icon: Icons.verified_user_outlined,
+                    label: 'Status Verifikasi',
+                    value: _getStatusVerifikasi(user.statusVerifikasi),
+                  ),
 
                 _buildProfileField(
                   icon: Icons.email_outlined,

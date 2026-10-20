@@ -6,6 +6,7 @@ class User {
   final String peran;
   final String jenisPelanggan;
   final bool? statusAktif;
+  final String? statusVerifikasi;
 
   const User({
     required this.idPengguna,
@@ -15,6 +16,7 @@ class User {
     required this.peran,
     required this.jenisPelanggan,
     this.statusAktif,
+    this.statusVerifikasi,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class User {
       peran: json['peran'],
       jenisPelanggan: json['jenis_pelanggan'],
       statusAktif: json['status_aktif'],
+      statusVerifikasi: json['status_verifikasi'] as String?,
     );
   }
 
@@ -38,6 +41,7 @@ class User {
       'peran': peran,
       'jenis_pelanggan': jenisPelanggan,
       'status_aktif': statusAktif,
+      'status_verifikasi': statusVerifikasi,
     };
   }
 }
