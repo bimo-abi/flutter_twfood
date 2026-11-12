@@ -14,7 +14,7 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Data dasar pengguna
+  // Data dasar penggunan
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _nomorTeleponController = TextEditingController();
@@ -431,9 +431,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 30),
 
-                // =========================
                 // DATA DASAR
-                // =========================
                 TextFormField(
                   controller: _namaController,
                   keyboardType: TextInputType.name,
@@ -570,9 +568,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 16),
 
-                // =========================
                 // JENIS PELANGGAN
-                // =========================
                 DropdownButtonFormField<String>(
                   initialValue: _jenisPelanggan,
                   decoration: const InputDecoration(
@@ -603,9 +599,8 @@ class _RegisterPageState extends State<RegisterPage> {
                   },
                 ),
 
-                // =========================
+
                 // PROFIL BISNIS
-                // =========================
                 _buildProfileBisnisSection(),
 
                 const SizedBox(height: 28),

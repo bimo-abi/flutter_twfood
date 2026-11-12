@@ -38,7 +38,8 @@ class _AddressPageState extends State<AddressPage> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const AddAddressPage(),
+        builder: (context) => const AddAddressPage(
+        ),
       ),
     );
 
@@ -96,7 +97,6 @@ class _AddressPageState extends State<AddressPage> {
       },
     );
 
-    // Jika pengguna memilih Batal
     if (confirmed != true) {
       return;
     }

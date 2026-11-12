@@ -6,20 +6,15 @@ import '../config/api_config.dart';
 import 'token_storage.dart';
 
 class ApiService {
-  // ============================================================
-  // GET PUBLIC
-  // ============================================================
 
+  // GET PUBLIC
   static Future<http.Response> get(String endpoint) {
     final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
 
     return http.get(url);
   }
 
-  // ============================================================
   // POST PUBLIC
-  // ============================================================
-
   static Future<http.Response> post(
     String endpoint, {
     Map<String, dynamic>? body,
@@ -36,10 +31,8 @@ class ApiService {
     );
   }
 
-  // ============================================================
-  // GET AUTHENTICATED
-  // ============================================================
 
+  // GET AUTHENTICATED
   static Future<http.Response> getAuthenticated(String endpoint) async {
     final token = await TokenStorage.getToken();
 
@@ -51,10 +44,8 @@ class ApiService {
     );
   }
 
-  // ============================================================
-  // POST AUTHENTICATED
-  // ============================================================
 
+  // POST AUTHENTICATED
   static Future<http.Response> postAuthenticated(
     String endpoint, {
     Map<String, dynamic>? body,
@@ -74,10 +65,7 @@ class ApiService {
     );
   }
 
-  // ============================================================
   // PUT AUTHENTICATED
-  // ============================================================
-
   static Future<http.Response> putAuthenticated(
     String endpoint, {
     Map<String, dynamic>? body,
@@ -97,10 +85,7 @@ class ApiService {
     );
   }
 
-  // ============================================================
   // DELETE AUTHENTICATED
-  // ============================================================
-
   static Future<http.Response> deleteAuthenticated(String endpoint) async {
     final token = await TokenStorage.getToken();
 
