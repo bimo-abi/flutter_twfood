@@ -18,13 +18,12 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _emailController =
-      TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
 
-  final TextEditingController _passwordController =
-      TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -38,9 +37,15 @@ class _LoginPageState extends State<LoginPage> {
   // ============================================================
 
   Future<void> _submitForm() async {
+    if (_isLoading) return;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       final response = await AuthService.login(
@@ -49,42 +54,82 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (!mounted) return;
+      Map<String, dynamic>? data;
 
-      final data = jsonDecode(response.body);
+      try {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded is Map<String, dynamic>) {
+          data = decoded;
+        }
+      } on FormatException {
+        data = null;
+      }
 
       // ========================================================
       // LOGIN BERHASIL
       // ========================================================
 
       if (response.statusCode == 200) {
-        final userData = data['data'];
-
-        final peran = userData['peran'];
-        final token = userData['token'];
-
-        // Pastikan token tersedia.
-        if (token is! String || token.isEmpty) {
+        if (data == null || data['data'] is! Map<String, dynamic>) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                'Login berhasil, tetapi token tidak ditemukan.',
-              ),
+              content: Text('Format respons login dari server tidak valid.'),
             ),
           );
           return;
         }
+        final userData = data['data'] as Map<String, dynamic>;
+        final peran = userData['peran'];
+        final token = userData['token'];
 
-        // Simpan token autentikasi.
+        // ========================================================
+        // VALIDASI ROLE SEBELUM MENYIMPAN TOKEN
+        // ========================================================
+
+        if (peran != 'pelanggan') {
+          await TokenStorage.deleteToken();
+          CartService.resetSession();
+
+          if (!mounted) return;
+
+          final message = peran == 'mitra'
+              ? 'Login Mitra berhasil, tetapi aplikasi Mitra belum tersedia.'
+              : 'Role pengguna tidak dikenali: $peran';
+
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(message)));
+
+          return;
+        }
+
+        // ========================================================
+        // VALIDASI TOKEN
+        // ========================================================
+
+        if (token is! String || token.trim().isEmpty) {
+          await TokenStorage.deleteToken();
+          CartService.resetSession();
+
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login gagal: token tidak valid.')),
+          );
+
+          return;
+        }
+
+        // ========================================================
+        // SIMPAN TOKEN KHUSUS PELANGGAN
+        // ========================================================
+
         await TokenStorage.saveToken(token);
 
         if (!mounted) return;
 
         debugPrint('Role pengguna: $peran');
-        debugPrint('Token berhasil disimpan.');
-
-        // ======================================================
-        // ROLE PELANGGAN
-        // ======================================================
+        debugPrint('Token pelanggan berhasil disimpan.');
 
         if (peran == 'pelanggan') {
           try {
@@ -107,20 +152,23 @@ class _LoginPageState extends State<LoginPage> {
               );
             }
 
+            final meUser = meData['data'] as Map<String, dynamic>;
+
+            if (meUser['peran'] != 'pelanggan') {
+              throw const FormatException(
+                'Role pengguna tidak sesuai dengan aplikasi pelanggan.',
+              );
+            }
+
             // Ambil ID pengguna dari response /me.
-            final rawUserId =
-                meData['data']['id_pengguna'];
+            final rawUserId = meUser['id_pengguna'];
 
             final userId = rawUserId is int
                 ? rawUserId
-                : int.tryParse(
-                    rawUserId?.toString() ?? '',
-                  );
+                : int.tryParse(rawUserId?.toString() ?? '');
 
             if (userId == null || userId <= 0) {
-              throw const FormatException(
-                'ID pengguna tidak valid.',
-              );
+              throw const FormatException('ID pengguna tidak valid.');
             }
 
             // Muat keranjang milik pengguna yang login.
@@ -133,11 +181,7 @@ class _LoginPageState extends State<LoginPage> {
             if (!mounted) return;
 
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Gagal menyiapkan sesi pelanggan: $e',
-                ),
-              ),
+              SnackBar(content: Text('Gagal menyiapkan sesi pelanggan: $e')),
             );
             return;
           }
@@ -147,43 +191,11 @@ class _LoginPageState extends State<LoginPage> {
           // Masuk ke halaman utama setelah keranjang dimuat.
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const HomePelangganPage(),
-            ),
+            MaterialPageRoute(builder: (context) => const HomePelangganPage()),
           );
 
           return;
         }
-
-        // ======================================================
-        // ROLE MITRA
-        // ======================================================
-
-        if (peran == 'mitra') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Login Mitra berhasil. '
-                'Halaman Mitra akan dibuat pada Fase 5.',
-              ),
-            ),
-          );
-          return;
-        }
-
-        // ======================================================
-        // ROLE TIDAK DIKENAL
-        // ======================================================
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Role pengguna tidak dikenali: $peran',
-            ),
-          ),
-        );
-
-        return;
       }
 
       // ========================================================
@@ -192,9 +204,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 401) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email atau password salah.'),
-          ),
+          const SnackBar(content: Text('Email atau password salah.')),
         );
         return;
       }
@@ -204,11 +214,8 @@ class _LoginPageState extends State<LoginPage> {
       // ========================================================
 
       if (response.statusCode == 403) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Akun tidak aktif.'),
-          ),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Akun tidak aktif.')));
         return;
       }
 
@@ -216,26 +223,48 @@ class _LoginPageState extends State<LoginPage> {
       // ERROR LAINNYA
       // ========================================================
 
-      String message = 'Login gagal.';
+      String message = 'Login gagal (HTTP ${response.statusCode}).';
 
-      if (data is Map<String, dynamic> &&
-          data['message'] != null) {
+      if (data != null && data['message'] is String) {
         message = data['message'].toString();
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      if (data != null && data['errors'] is Map<String, dynamic>) {
+        final errors = data['errors'] as Map<String, dynamic>;
+
+        if (errors.isNotEmpty) {
+          final firstError = errors.values.first;
+
+          if (firstError is List && firstError.isNotEmpty) {
+            message = firstError.first.toString();
+          }
+        }
+      }
+
+      if (data == null) {
+        message =
+            'Server mengembalikan respons tidak valid '
+            '(HTTP ${response.statusCode}).';
+      }
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
-            'Tidak dapat terhubung ke server: $e',
+            'Terjadi kesalahan saat login. Periksa koneksi dan coba lagi.',
           ),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -246,9 +275,7 @@ class _LoginPageState extends State<LoginPage> {
   void _goToRegister() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const RegisterPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const RegisterPage()),
     );
   }
 
@@ -259,9 +286,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login TWFOOD'),
-      ),
+      appBar: AppBar(title: const Text('Login TWFOOD')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -272,20 +297,14 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const SizedBox(height: 30),
 
-                const Icon(
-                  Icons.fastfood_outlined,
-                  size: 70,
-                ),
+                const Icon(Icons.fastfood_outlined, size: 70),
 
                 const SizedBox(height: 20),
 
                 const Text(
                   'Selamat Datang',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 8),
@@ -293,10 +312,7 @@ class _LoginPageState extends State<LoginPage> {
                 const Text(
                   'Login ke akun TWFOOD Anda',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
 
                 const SizedBox(height: 35),
@@ -312,14 +328,11 @@ class _LoginPageState extends State<LoginPage> {
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) {
-                    if (value == null ||
-                        value.trim().isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Email wajib diisi.';
                     }
 
-                    final emailRegex = RegExp(
-                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                    );
+                    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
                     if (!emailRegex.hasMatch(value.trim())) {
                       return 'Format email tidak valid.';
@@ -338,9 +351,7 @@ class _LoginPageState extends State<LoginPage> {
                   decoration: InputDecoration(
                     labelText: 'Password',
                     hintText: 'Masukkan password',
-                    prefixIcon: const Icon(
-                      Icons.lock_outline,
-                    ),
+                    prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -349,8 +360,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       onPressed: () {
                         setState(() {
-                          _obscurePassword =
-                              !_obscurePassword;
+                          _obscurePassword = !_obscurePassword;
                         });
                       },
                     ),
@@ -371,14 +381,20 @@ class _LoginPageState extends State<LoginPage> {
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: _submitForm,
-                    child: const Text(
-                      'LOGIN',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    onPressed: _isLoading ? null : _submitForm,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text(
+                            'LOGIN',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
 

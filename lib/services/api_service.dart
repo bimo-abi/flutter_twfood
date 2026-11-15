@@ -1,17 +1,55 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 import 'token_storage.dart';
 
 class ApiService {
+  // Client dapat diganti saat pengujian agar request tidak menuju server asli.
+  static http.Client _client = http.Client();
+
+  @visibleForTesting
+  static void setClientForTesting(http.Client client) {
+    _client = client;
+  }
+
+  @visibleForTesting
+  static void resetClientForTesting() {
+    _client.close();
+    _client = http.Client();
+  }
+
+  // Membuat URL endpoint Laravel.
+  static Uri _url(String endpoint) {
+    return Uri.parse('${ApiConfig.baseUrl}$endpoint');
+  }
+
+  // Header untuk request publik.
+  static Map<String, String> get _publicHeaders => {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  };
+
+  // Header untuk request yang membutuhkan autentikasi.
+  static Future<Map<String, String>> _authHeaders() async {
+    final token = await TokenStorage.getToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception('Token autentikasi tidak ditemukan. Silakan login.');
+    }
+
+    return {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
 
   // GET PUBLIC
   static Future<http.Response> get(String endpoint) {
-    final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
-
-    return http.get(url);
+    return _client.get(_url(endpoint), headers: {'Accept': 'application/json'});
   }
 
   // POST PUBLIC
@@ -19,48 +57,30 @@ class ApiService {
     String endpoint, {
     Map<String, dynamic>? body,
   }) {
-    final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
-
-    return http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+    return _client.post(
+      _url(endpoint),
+      headers: _publicHeaders,
       body: body == null ? null : jsonEncode(body),
     );
   }
 
-
   // GET AUTHENTICATED
   static Future<http.Response> getAuthenticated(String endpoint) async {
-    final token = await TokenStorage.getToken();
-
-    final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
-
-    return http.get(
-      url,
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
-    );
+    return _client.get(_url(endpoint), headers: await _authHeaders());
   }
-
 
   // POST AUTHENTICATED
   static Future<http.Response> postAuthenticated(
     String endpoint, {
     Map<String, dynamic>? body,
+    Map<String, String>? extraHeaders,
   }) async {
-    final token = await TokenStorage.getToken();
+    final headers = await _authHeaders();
+    if (extraHeaders != null) headers.addAll(extraHeaders);
 
-    final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
-
-    return http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    return _client.post(
+      _url(endpoint),
+      headers: headers,
       body: body == null ? null : jsonEncode(body),
     );
   }
@@ -70,30 +90,27 @@ class ApiService {
     String endpoint, {
     Map<String, dynamic>? body,
   }) async {
-    final token = await TokenStorage.getToken();
+    return _client.put(
+      _url(endpoint),
+      headers: await _authHeaders(),
+      body: body == null ? null : jsonEncode(body),
+    );
+  }
 
-    final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
-
-    return http.put(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+  // PATCH AUTHENTICATED
+  static Future<http.Response> patchAuthenticated(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    return _client.patch(
+      _url(endpoint),
+      headers: await _authHeaders(),
       body: body == null ? null : jsonEncode(body),
     );
   }
 
   // DELETE AUTHENTICATED
   static Future<http.Response> deleteAuthenticated(String endpoint) async {
-    final token = await TokenStorage.getToken();
-
-    final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
-
-    return http.delete(
-      url,
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
-    );
+    return _client.delete(_url(endpoint), headers: await _authHeaders());
   }
 }

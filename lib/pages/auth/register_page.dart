@@ -599,7 +599,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   },
                 ),
 
-
                 // PROFIL BISNIS
                 _buildProfileBisnisSection(),
 

@@ -29,30 +29,19 @@ class Recipe {
     if (rawProduk is List) {
       for (final item in rawProduk) {
         if (item is Map<String, dynamic>) {
-          produk.add(
-            RecipeProduct.fromJson(item),
-          );
+          produk.add(RecipeProduct.fromJson(item));
         }
       }
     }
 
     return Recipe(
-      idResep: int.tryParse(
-            json['id_resep'].toString(),
-          ) ??
-          0,
-      judul:
-          json['judul']?.toString() ?? '',
-      deskripsi:
-          json['deskripsi']?.toString(),
-      foto:
-          json['foto']?.toString(),
-      bahan:
-          json['bahan']?.toString(),
-      langkahPembuatan:
-          json['langkah_pembuatan']?.toString(),
-      waktuMemasak:
-          json['waktu_memasak']?.toString(),
+      idResep: int.tryParse(json['id_resep'].toString()) ?? 0,
+      judul: json['judul']?.toString() ?? '',
+      deskripsi: json['deskripsi']?.toString(),
+      foto: json['foto']?.toString(),
+      bahan: json['bahan']?.toString(),
+      langkahPembuatan: json['langkah_pembuatan']?.toString(),
+      waktuMemasak: json['waktu_memasak']?.toString(),
       produk: produk,
     );
   }
@@ -73,9 +62,7 @@ class RecipeProduct {
     this.produk,
   });
 
-  factory RecipeProduct.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory RecipeProduct.fromJson(Map<String, dynamic> json) {
     final rawProduk = json['produk'];
 
     Product? produk;
@@ -85,20 +72,10 @@ class RecipeProduct {
     }
 
     return RecipeProduct(
-      idResepProduk: int.tryParse(
-            json['id_resep_produk'].toString(),
-          ) ??
-          0,
-      idResep: int.tryParse(
-            json['id_resep'].toString(),
-          ) ??
-          0,
-      idProduk: int.tryParse(
-            json['id_produk'].toString(),
-          ) ??
-          0,
-      jumlah:
-          json['jumlah']?.toString() ?? '',
+      idResepProduk: int.tryParse(json['id_resep_produk'].toString()) ?? 0,
+      idResep: int.tryParse(json['id_resep'].toString()) ?? 0,
+      idProduk: int.tryParse(json['id_produk'].toString()) ?? 0,
+      jumlah: json['jumlah']?.toString() ?? '',
       produk: produk,
     );
   }

@@ -6,32 +6,25 @@ import '../../services/recipe_service.dart';
 class RecipeDetailPage extends StatefulWidget {
   final int recipeId;
 
-  const RecipeDetailPage({
-    super.key,
-    required this.recipeId,
-  });
+  const RecipeDetailPage({super.key, required this.recipeId});
 
   @override
-  State<RecipeDetailPage> createState() =>
-      _RecipeDetailPageState();
+  State<RecipeDetailPage> createState() => _RecipeDetailPageState();
 }
 
-class _RecipeDetailPageState
-    extends State<RecipeDetailPage> {
+class _RecipeDetailPageState extends State<RecipeDetailPage> {
   late Future<Recipe> _recipeFuture;
 
   @override
   void initState() {
     super.initState();
 
-    _recipeFuture =
-        RecipeService.getRecipeById(widget.recipeId);
+    _recipeFuture = RecipeService.getRecipeById(widget.recipeId);
   }
 
   Future<void> _refreshRecipe() async {
     setState(() {
-      _recipeFuture =
-          RecipeService.getRecipeById(widget.recipeId);
+      _recipeFuture = RecipeService.getRecipeById(widget.recipeId);
     });
 
     await _recipeFuture;
@@ -40,17 +33,12 @@ class _RecipeDetailPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detail Resep'),
-      ),
+      appBar: AppBar(title: const Text('Detail Resep')),
       body: FutureBuilder<Recipe>(
         future: _recipeFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -60,10 +48,7 @@ class _RecipeDetailPageState
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 60,
-                    ),
+                    const Icon(Icons.error_outline, size: 60),
                     const SizedBox(height: 16),
                     const Text(
                       'Gagal mengambil detail resep.',
@@ -92,11 +77,7 @@ class _RecipeDetailPageState
           final recipe = snapshot.data;
 
           if (recipe == null) {
-            return const Center(
-              child: Text(
-                'Data resep tidak ditemukan.',
-              ),
-            );
+            return const Center(child: Text('Data resep tidak ditemukan.'));
           }
 
           return RefreshIndicator(
@@ -121,10 +102,7 @@ class _RecipeDetailPageState
                   const SizedBox(height: 12),
                   Text(
                     recipe.deskripsi!,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.5,
-                    ),
+                    style: const TextStyle(fontSize: 15, height: 1.5),
                   ),
                 ],
 
@@ -147,36 +125,23 @@ class _RecipeDetailPageState
                 if (recipe.produk.isEmpty)
                   const Text(
                     'Belum ada produk yang tercatat.',
-                    style: TextStyle(
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(color: Colors.grey),
                   )
                 else
-                  ...recipe.produk.map(
-                    (recipeProduct) {
-                      final namaProduk =
-                          recipeProduct.produk
-                                  ?.namaProduk ??
-                              'Produk #${recipeProduct.idProduk}';
+                  ...recipe.produk.map((recipeProduct) {
+                    final namaProduk =
+                        recipeProduct.produk?.namaProduk ??
+                        'Produk #${recipeProduct.idProduk}';
 
-                      return Card(
-                        margin: const EdgeInsets.only(
-                          bottom: 10,
-                        ),
-                        child: ListTile(
-                          leading: const Icon(
-                            Icons.shopping_bag_outlined,
-                          ),
-                          title: Text(
-                            namaProduk,
-                          ),
-                          subtitle: Text(
-                            'Jumlah: ${recipeProduct.jumlah}',
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: ListTile(
+                        leading: const Icon(Icons.shopping_bag_outlined),
+                        title: Text(namaProduk),
+                        subtitle: Text('Jumlah: ${recipeProduct.jumlah}'),
+                      ),
+                    );
+                  }),
 
                 const SizedBox(height: 20),
 
@@ -184,10 +149,7 @@ class _RecipeDetailPageState
 
                 const SizedBox(height: 12),
 
-                _buildTextContent(
-                  recipe.bahan,
-                  'Belum ada informasi bahan.',
-                ),
+                _buildTextContent(recipe.bahan, 'Belum ada informasi bahan.'),
 
                 const SizedBox(height: 20),
 
@@ -217,15 +179,13 @@ class _RecipeDetailPageState
         borderRadius: BorderRadius.circular(16),
         color: Colors.grey.shade200,
       ),
-      child: recipe.foto != null &&
-              recipe.foto!.isNotEmpty
+      child: recipe.foto != null && recipe.foto!.isNotEmpty
           ? ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.network(
                 recipe.foto!,
                 fit: BoxFit.cover,
-                errorBuilder:
-                    (context, error, stackTrace) {
+                errorBuilder: (context, error, stackTrace) {
                   return const Icon(
                     Icons.image_not_supported_outlined,
                     size: 70,
@@ -233,18 +193,11 @@ class _RecipeDetailPageState
                 },
               ),
             )
-          : const Icon(
-              Icons.menu_book_outlined,
-              size: 70,
-            ),
+          : const Icon(Icons.menu_book_outlined, size: 70),
     );
   }
 
-  Widget _buildInfoRow(
-    IconData icon,
-    String label,
-    String value,
-  ) {
+  Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -252,15 +205,9 @@ class _RecipeDetailPageState
         const SizedBox(width: 10),
         Expanded(
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(value),
             ],
@@ -273,32 +220,15 @@ class _RecipeDetailPageState
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-      ),
+      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
     );
   }
 
-  Widget _buildTextContent(
-    String? content,
-    String emptyMessage,
-  ) {
+  Widget _buildTextContent(String? content, String emptyMessage) {
     if (content == null || content.isEmpty) {
-      return Text(
-        emptyMessage,
-        style: const TextStyle(
-          color: Colors.grey,
-        ),
-      );
+      return Text(emptyMessage, style: const TextStyle(color: Colors.grey));
     }
 
-    return Text(
-      content,
-      style: const TextStyle(
-        fontSize: 15,
-        height: 1.6,
-      ),
-    );
+    return Text(content, style: const TextStyle(fontSize: 15, height: 1.6));
   }
 }

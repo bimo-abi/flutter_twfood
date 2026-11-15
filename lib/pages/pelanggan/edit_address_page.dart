@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../models/address.dart';
+import '../../models/region_selection.dart';
 import '../../services/address_service.dart';
+import 'location_picker_page.dart';
+import '../../widgets/administrative_region_fields.dart';
 
 class EditAddressPage extends StatefulWidget {
   final Address address;
@@ -14,51 +17,31 @@ class EditAddressPage extends StatefulWidget {
 
 class _EditAddressPageState extends State<EditAddressPage> {
   final _formKey = GlobalKey<FormState>();
-
   late final TextEditingController _labelController;
   late final TextEditingController _namaPenerimaController;
   late final TextEditingController _nomorTeleponController;
   late final TextEditingController _alamatLengkapController;
-  late final TextEditingController _kotaController;
-  late final TextEditingController _provinsiController;
   late final TextEditingController _kodePosController;
-  late final TextEditingController _latitudeController;
-  late final TextEditingController _longitudeController;
+  double? _latitude;
+  double? _longitude;
 
+  RegionSelection? _region;
   late bool _alamatUtama;
-
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-
     final address = widget.address;
-
     _labelController = TextEditingController(text: address.label);
-
     _namaPenerimaController = TextEditingController(text: address.namaPenerima);
-
     _nomorTeleponController = TextEditingController(text: address.nomorTelepon);
-
     _alamatLengkapController = TextEditingController(
       text: address.alamatLengkap,
     );
-
-    _kotaController = TextEditingController(text: address.kota);
-
-    _provinsiController = TextEditingController(text: address.provinsi);
-
     _kodePosController = TextEditingController(text: address.kodePos);
-
-    _latitudeController = TextEditingController(
-      text: address.latitude?.toString() ?? '',
-    );
-
-    _longitudeController = TextEditingController(
-      text: address.longitude?.toString() ?? '',
-    );
-
+    _latitude = address.latitude;
+    _longitude = address.longitude;
     _alamatUtama = address.alamatUtama;
   }
 
@@ -68,47 +51,27 @@ class _EditAddressPageState extends State<EditAddressPage> {
     _namaPenerimaController.dispose();
     _nomorTeleponController.dispose();
     _alamatLengkapController.dispose();
-    _kotaController.dispose();
-    _provinsiController.dispose();
     _kodePosController.dispose();
-    _latitudeController.dispose();
-    _longitudeController.dispose();
-
     super.dispose();
   }
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate()) return;
+    if (_region == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih wilayah sampai desa/kelurahan.')),
+      );
       return;
     }
+    if (_isSubmitting) return;
 
-    if (_isSubmitting) {
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-    });
+    setState(() => _isSubmitting = true);
 
     try {
-      final latitudeText = _latitudeController.text.trim();
-
-      final longitudeText = _longitudeController.text.trim();
-
-      final double? latitude = latitudeText.isEmpty
-          ? null
-          : double.tryParse(latitudeText);
-
-      final double? longitude = longitudeText.isEmpty
-          ? null
-          : double.tryParse(longitudeText);
-
-      if (latitudeText.isNotEmpty && latitude == null) {
-        throw Exception('Latitude harus berupa angka yang valid.');
-      }
-
-      if (longitudeText.isNotEmpty && longitude == null) {
-        throw Exception('Longitude harus berupa angka yang valid.');
+      if (_latitude == null || _longitude == null) {
+        throw Exception(
+          'Tentukan titik lokasi pengiriman melalui peta terlebih dahulu.',
+        );
       }
 
       final address = await AddressService.updateAddress(
@@ -117,41 +80,90 @@ class _EditAddressPageState extends State<EditAddressPage> {
         namaPenerima: _namaPenerimaController.text.trim(),
         nomorTelepon: _nomorTeleponController.text.trim(),
         alamatLengkap: _alamatLengkapController.text.trim(),
-        kota: _kotaController.text.trim(),
-        provinsi: _provinsiController.text.trim(),
+        region: _region!,
         kodePos: _kodePosController.text.trim(),
-        latitude: latitude,
-        longitude: longitude,
+        latitude: _latitude,
+        longitude: _longitude,
         alamatUtama: _alamatUtama,
       );
 
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Alamat "${address.label}" berhasil diubah.')),
       );
-
       Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Gagal mengubah alamat: $e')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengubah alamat: $error')));
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Future<void> _selectLocation() async {
+    final result = await Navigator.of(context).push<MapLocation>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerPage(
+          initialLatitude: _latitude,
+          initialLongitude: _longitude,
+        ),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+    setState(() {
+      _latitude = result.latitude;
+      _longitude = result.longitude;
+    });
+  }
+
+  Widget _buildLocationPicker() {
+    final hasLocation = _latitude != null && _longitude != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Lokasi Pengiriman',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          hasLocation
+              ? 'Latitude: ${_latitude!.toStringAsFixed(6)}\\nLongitude: ${_longitude!.toStringAsFixed(6)}'
+              : 'Titik lokasi wajib ditentukan agar kurir dapat menemukan alamat.',
+          style: const TextStyle(fontSize: 13, color: Colors.black54),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _isSubmitting ? null : _selectLocation,
+          icon: const Icon(Icons.map_outlined),
+          label: Text(
+            hasLocation ? 'Ubah Titik Lokasi' : 'Pilih Titik Lokasi di Peta',
+          ),
+        ),
+        if (!hasLocation)
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              'GPS dapat digunakan sebagai titik awal, lalu geser peta untuk menyesuaikan lokasi rumah.',
+              style: TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String? _required(String? value, String label) {
+    if (value == null || value.trim().isEmpty) return '$label wajib diisi';
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    final address = widget.address;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Alamat')),
       body: Form(
@@ -163,188 +175,79 @@ class _EditAddressPageState extends State<EditAddressPage> {
               controller: _labelController,
               decoration: const InputDecoration(
                 labelText: 'Label Alamat',
-                hintText: 'Contoh: Rumah, Kantor',
                 border: OutlineInputBorder(),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Label alamat wajib diisi';
-                }
-
-                return null;
-              },
+              validator: (value) => _required(value, 'Label alamat'),
             ),
-
             const SizedBox(height: 16),
-
             TextFormField(
               controller: _namaPenerimaController,
               decoration: const InputDecoration(
                 labelText: 'Nama Penerima',
-                hintText: 'Masukkan nama penerima',
                 border: OutlineInputBorder(),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Nama penerima wajib diisi';
-                }
-
-                return null;
-              },
+              validator: (value) => _required(value, 'Nama penerima'),
             ),
-
             const SizedBox(height: 16),
-
             TextFormField(
               controller: _nomorTeleponController,
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
                 labelText: 'Nomor Telepon',
-                hintText: 'Masukkan nomor telepon',
                 border: OutlineInputBorder(),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Nomor telepon wajib diisi';
-                }
-
-                return null;
-              },
+              validator: (value) => _required(value, 'Nomor telepon'),
             ),
-
             const SizedBox(height: 16),
-
             TextFormField(
               controller: _alamatLengkapController,
               maxLines: 4,
               decoration: const InputDecoration(
                 labelText: 'Alamat Lengkap',
-                hintText: 'Masukkan alamat lengkap',
+                hintText: 'Nama jalan, nomor rumah, RT/RW, patokan',
                 border: OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Alamat lengkap wajib diisi';
+              validator: (value) => _required(value, 'Alamat lengkap'),
+            ),
+            const SizedBox(height: 20),
+            AdministrativeRegionFields(
+              initialProvinceId: address.kodeProvinsi,
+              initialRegencyId: address.kodeKabupatenKota,
+              initialDistrictId: address.kodeKecamatan,
+              initialVillageId: address.kodeDesaKelurahan,
+              onChanged: (selection) {
+                setState(() => _region = selection);
+                if (selection?.village.postalCode != null) {
+                  _kodePosController.text = selection!.village.postalCode!;
                 }
-
-                return null;
               },
             ),
-
             const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _kotaController,
-              decoration: const InputDecoration(
-                labelText: 'Kota',
-                hintText: 'Contoh: Jember',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Kota wajib diisi';
-                }
-
-                return null;
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _provinsiController,
-              decoration: const InputDecoration(
-                labelText: 'Provinsi',
-                hintText: 'Contoh: Jawa Timur',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Provinsi wajib diisi';
-                }
-
-                return null;
-              },
-            ),
-
-            const SizedBox(height: 16),
-
             TextFormField(
               controller: _kodePosController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Kode Pos',
-                hintText: 'Contoh: 68100',
                 border: OutlineInputBorder(),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Kode pos wajib diisi';
-                }
-
-                return null;
-              },
+              validator: (value) => _required(value, 'Kode pos'),
             ),
-
             const SizedBox(height: 20),
-
-            const Text(
-              'Koordinat (opsional)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-
+            _buildLocationPicker(),
             const SizedBox(height: 10),
-
-            TextFormField(
-              controller: _latitudeController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Latitude',
-                hintText: 'Contoh: -8.17234567',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _longitudeController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Longitude',
-                hintText: 'Contoh: 113.70012345',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Jadikan alamat utama'),
               subtitle: const Text(
-                'Alamat ini akan digunakan '
-                'sebagai alamat utama.',
+                'Alamat ini akan digunakan sebagai alamat utama.',
               ),
               value: _alamatUtama,
               onChanged: _isSubmitting
                   ? null
-                  : (value) {
-                      setState(() {
-                        _alamatUtama = value;
-                      });
-                    },
+                  : (value) => setState(() => _alamatUtama = value),
             ),
-
             const SizedBox(height: 20),
-
             SizedBox(
               height: 50,
               child: ElevatedButton(

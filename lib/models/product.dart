@@ -1,3 +1,13 @@
+bool _parseBool(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == '1' || normalized == 'true';
+  }
+  return false;
+}
+
 class Product {
   final int idProduk;
   final String namaProduk;
@@ -5,7 +15,7 @@ class Product {
   final String? fotoProduk;
   final bool statusAktif;
   final List<ProductVariant> varian;
-  
+
   const Product({
     required this.idProduk,
     required this.namaProduk,
@@ -24,11 +34,7 @@ class Product {
         if (item is Map<String, dynamic>) {
           varian.add(ProductVariant.fromJson(item));
         } else if (item is Map) {
-          varian.add(
-            ProductVariant.fromJson(
-              Map<String, dynamic>.from(item),
-            ),
-          );
+          varian.add(ProductVariant.fromJson(Map<String, dynamic>.from(item)));
         }
       }
     }
@@ -38,7 +44,7 @@ class Product {
       namaProduk: json['nama_produk']?.toString() ?? '',
       deskripsi: json['deskripsi']?.toString(),
       fotoProduk: json['foto_produk']?.toString(),
-      statusAktif: json['status_aktif'] == true,
+      statusAktif: _parseBool(json['status_aktif']),
       varian: varian,
     );
   }
@@ -94,9 +100,7 @@ class ProductVariant {
           daftarHarga.add(ProductPrice.fromJson(item));
         } else if (item is Map) {
           daftarHarga.add(
-            ProductPrice.fromJson(
-              Map<String, dynamic>.from(item),
-            ),
+            ProductPrice.fromJson(Map<String, dynamic>.from(item)),
           );
         }
       }
@@ -109,13 +113,11 @@ class ProductVariant {
       beratGram: _parseNullableInt(json['berat_gram']),
       satuanJual: json['satuan_jual']?.toString(),
       stok: int.tryParse(json['stok'].toString()) ?? 0,
-      tersediaPreOrder: json['tersedia_pre_order'] == true,
-      tanggalMulaiPreOrder:
-          _parseDateTime(json['tanggal_mulai_pre_order']),
-      tanggalSelesaiPreOrder:
-          _parseDateTime(json['tanggal_selesai_pre_order']),
+      tersediaPreOrder: _parseBool(json['tersedia_pre_order']),
+      tanggalMulaiPreOrder: _parseDateTime(json['tanggal_mulai_pre_order']),
+      tanggalSelesaiPreOrder: _parseDateTime(json['tanggal_selesai_pre_order']),
       estimasiTersedia: _parseDateTime(json['estimasi_tersedia']),
-      statusAktif: json['status_aktif'] == true,
+      statusAktif: _parseBool(json['status_aktif']),
       daftarHarga: daftarHarga,
     );
   }
@@ -129,14 +131,11 @@ class ProductVariant {
       'satuan_jual': satuanJual,
       'stok': stok,
       'tersedia_pre_order': tersediaPreOrder,
-      'tanggal_mulai_pre_order':
-          tanggalMulaiPreOrder?.toIso8601String(),
-      'tanggal_selesai_pre_order':
-          tanggalSelesaiPreOrder?.toIso8601String(),
+      'tanggal_mulai_pre_order': tanggalMulaiPreOrder?.toIso8601String(),
+      'tanggal_selesai_pre_order': tanggalSelesaiPreOrder?.toIso8601String(),
       'estimasi_tersedia': estimasiTersedia?.toIso8601String(),
       'status_aktif': statusAktif,
-      'daftar_harga':
-          daftarHarga.map((item) => item.toJson()).toList(),
+      'daftar_harga': daftarHarga.map((item) => item.toJson()).toList(),
     };
   }
 
@@ -172,14 +171,13 @@ class ProductPrice {
 
   factory ProductPrice.fromJson(Map<String, dynamic> json) {
     return ProductPrice(
-      idDaftarHarga:
-          int.tryParse(json['id_daftar_harga'].toString()) ?? 0,
+      idDaftarHarga: int.tryParse(json['id_daftar_harga'].toString()) ?? 0,
       idVarian: int.tryParse(json['id_varian'].toString()) ?? 0,
       jenisHarga: json['jenis_harga']?.toString() ?? '',
       harga: int.tryParse(json['harga'].toString()) ?? 0,
       minimalPembelian: _parseNullableInt(json['minimal_pembelian']),
       satuanMinimal: json['satuan_minimal']?.toString(),
-      statusAktif: json['status_aktif'] == true,
+      statusAktif: _parseBool(json['status_aktif']),
     );
   }
 

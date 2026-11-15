@@ -1,7 +1,10 @@
-
 import 'package:flutter/material.dart';
 
+import '../../models/address.dart';
+import '../../models/cart_item.dart';
 import '../../services/cart_service.dart';
+import 'address_selection_page.dart';
+import 'checkout_page.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -11,6 +14,29 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
+  Address? _selectedDeliveryAddress;
+
+  @override
+  void initState() {
+    super.initState();
+    CartService.changes.addListener(_onCartChanged);
+  }
+
+  @override
+  void dispose() {
+    CartService.changes.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() {
+    if (mounted) setState(() {});
+  }
+
+  int _minimumQuantityFor(CartItem item) {
+    if (item.price.jenisHarga.toLowerCase() != 'grosir') return 1;
+    return item.price.minimalPembelian ?? 1;
+  }
+
   @override
   Widget build(BuildContext context) {
     final items = CartService.items;
@@ -33,6 +59,7 @@ class _CartPageState extends State<CartPage> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                _buildDeliveryAddressCard(),
                 ...items.map(
                   (item) => Card(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -49,29 +76,24 @@ class _CartPageState extends State<CartPage> {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            'Varian: ${item.variant.namaVarian}',
-                          ),
-                          Text(
-                            'Jenis harga: ${item.price.jenisHarga}',
-                          ),
-                          Text(
-                            'Harga satuan: Rp ${item.price.harga}',
-                          ),
+                          Text('Varian: ${item.variant.namaVarian}'),
+                          Text('Jenis harga: ${item.price.jenisHarga}'),
+                          Text('Harga satuan: Rp ${item.price.harga}'),
                           const SizedBox(height: 12),
                           Row(
                             children: [
                               IconButton(
-                                onPressed: () {
-                                  _updateQuantity(
-                                    item.variant.idVarian,
-                                    item.price.idDaftarHarga,
-                                    item.quantity - 1,
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.remove_circle_outline,
-                                ),
+                                onPressed:
+                                    item.quantity <= _minimumQuantityFor(item)
+                                    ? null
+                                    : () {
+                                        _updateQuantity(
+                                          item.variant.idVarian,
+                                          item.price.idDaftarHarga,
+                                          item.quantity - 1,
+                                        );
+                                      },
+                                icon: const Icon(Icons.remove_circle_outline),
                               ),
                               Text(
                                 '${item.quantity}',
@@ -80,16 +102,16 @@ class _CartPageState extends State<CartPage> {
                                 ),
                               ),
                               IconButton(
-                                onPressed: () {
-                                  _updateQuantity(
-                                    item.variant.idVarian,
-                                    item.price.idDaftarHarga,
-                                    item.quantity + 1,
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.add_circle_outline,
-                                ),
+                                onPressed: item.quantity >= item.variant.stok
+                                    ? null
+                                    : () {
+                                        _updateQuantity(
+                                          item.variant.idVarian,
+                                          item.price.idDaftarHarga,
+                                          item.quantity + 1,
+                                        );
+                                      },
+                                icon: const Icon(Icons.add_circle_outline),
                               ),
                               const Spacer(),
                               IconButton(
@@ -102,9 +124,7 @@ class _CartPageState extends State<CartPage> {
                                     item.variant.namaVarian,
                                   );
                                 },
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                ),
+                                icon: const Icon(Icons.delete_outline),
                               ),
                             ],
                           ),
@@ -147,8 +167,86 @@ class _CartPageState extends State<CartPage> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _openCheckout,
+                  icon: const Icon(Icons.shopping_bag_outlined),
+                  label: const Text('Lanjut ke Checkout'),
+                ),
               ],
             ),
+    );
+  }
+
+  Widget _buildDeliveryAddressCard() {
+    final address = _selectedDeliveryAddress;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Alamat Pengiriman',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _selectDeliveryAddress,
+                  child: Text(address == null ? 'Pilih' : 'Ubah'),
+                ),
+              ],
+            ),
+            if (address == null)
+              const Text(
+                'Pilih alamat jika pesanan akan dikirim. Untuk pengambilan di outlet, alamat pengiriman tidak diperlukan.',
+                style: TextStyle(color: Colors.black54),
+              )
+            else ...[
+              Text(
+                '${address.namaPenerima} • ${address.nomorTelepon}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${address.label}: ${address.alamatLengkap}, ${address.kota}, ${address.provinsi} ${address.kodePos}',
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectDeliveryAddress() async {
+    final selectedAddress = await Navigator.push<Address>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddressSelectionPage()),
+    );
+
+    if (selectedAddress != null && mounted) {
+      setState(() {
+        _selectedDeliveryAddress = selectedAddress;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Alamat pengiriman berhasil dipilih.')),
+      );
+    }
+  }
+
+  Future<void> _openCheckout() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CheckoutPage(initialAddress: _selectedDeliveryAddress),
+      ),
     );
   }
 
@@ -167,19 +265,13 @@ class _CartPageState extends State<CartPage> {
             const SizedBox(height: 20),
             const Text(
               'Keranjang masih kosong',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
             const Text(
               'Pilih produk TWFOOD untuk mulai berbelanja.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 15, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
           ],
@@ -188,18 +280,17 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  void _updateQuantity(
-    int variantId,
-    int priceId,
-    int quantity,
-  ) {
-    setState(() {
-      CartService.updateQuantity(
-        variantId: variantId,
-        priceId: priceId,
-        quantity: quantity,
-      );
-    });
+  void _updateQuantity(int variantId, int priceId, int quantity) {
+    final errorMessage = CartService.updateQuantity(
+      variantId: variantId,
+      priceId: priceId,
+      quantity: quantity,
+    );
+
+    if (errorMessage != null && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(errorMessage)));
+    }
   }
 
   Future<void> _confirmRemoveItem(
@@ -238,16 +329,11 @@ class _CartPageState extends State<CartPage> {
     }
 
     setState(() {
-      CartService.removeItem(
-        variantId: variantId,
-        priceId: priceId,
-      );
+      CartService.removeItem(variantId: variantId, priceId: priceId);
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Item dihapus dari keranjang.'),
-      ),
+      const SnackBar(content: Text('Item dihapus dari keranjang.')),
     );
   }
 
@@ -256,9 +342,7 @@ class _CartPageState extends State<CartPage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Kosongkan keranjang?'),
-        content: const Text(
-          'Semua item dalam keranjang akan dihapus.',
-        ),
+        content: const Text('Semua item dalam keranjang akan dihapus.'),
         actions: [
           TextButton(
             onPressed: () {

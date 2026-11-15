@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../models/product.dart';
@@ -9,14 +8,10 @@ import '../../services/cart_service.dart';
 class ProductDetailPage extends StatefulWidget {
   final int productId;
 
-  const ProductDetailPage({
-    super.key,
-    required this.productId,
-  });
+  const ProductDetailPage({super.key, required this.productId});
 
   @override
-  State<ProductDetailPage> createState() =>
-      _ProductDetailPageState();
+  State<ProductDetailPage> createState() => _ProductDetailPageState();
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
@@ -25,13 +20,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void initState() {
     super.initState();
-    _productFuture =
-        ProductService.getProductById(widget.productId);
+    _productFuture = ProductService.getProductById(widget.productId);
   }
 
   Future<void> _refreshProduct() async {
-    final future =
-        ProductService.getProductById(widget.productId);
+    final future = ProductService.getProductById(widget.productId);
 
     setState(() {
       _productFuture = future;
@@ -43,17 +36,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detail Produk'),
-      ),
+      appBar: AppBar(title: const Text('Detail Produk')),
       body: FutureBuilder<Product>(
         future: _productFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -61,13 +49,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 60,
-                    ),
+                    const Icon(Icons.error_outline, size: 60),
                     const SizedBox(height: 16),
                     const Text(
                       'Gagal mengambil detail produk.',
@@ -96,12 +80,24 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           final product = snapshot.data;
 
           if (product == null) {
+            return const Center(child: Text('Data produk tidak ditemukan.'));
+          }
+
+          if (!product.statusAktif) {
             return const Center(
-              child: Text(
-                'Data produk tidak ditemukan.',
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'Produk ini sedang tidak tersedia.',
+                  textAlign: TextAlign.center,
+                ),
               ),
             );
           }
+
+          final activeVariants = product.varian
+              .where((variant) => variant.statusAktif)
+              .toList();
 
           return RefreshIndicator(
             onRefresh: _refreshProduct,
@@ -118,37 +114,27 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                if (product.deskripsi != null &&
-                    product.deskripsi!.isNotEmpty)
+                if (product.deskripsi != null && product.deskripsi!.isNotEmpty)
                   Text(
                     product.deskripsi!,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.5,
-                    ),
+                    style: const TextStyle(fontSize: 15, height: 1.5),
                   ),
                 const SizedBox(height: 24),
                 const Text(
                   'Varian Produk',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                if (product.varian.isEmpty)
+                if (activeVariants.isEmpty)
                   const Card(
                     child: Padding(
                       padding: EdgeInsets.all(16),
-                      child: Text(
-                        'Belum ada varian aktif.',
-                      ),
+                      child: Text('Belum ada varian aktif.'),
                     ),
                   )
                 else
-                  ...product.varian.map(
-                    (variant) =>
-                        _buildVariantCard(product, variant),
+                  ...activeVariants.map(
+                    (variant) => _buildVariantCard(product, variant),
                   ),
               ],
             ),
@@ -166,8 +152,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         borderRadius: BorderRadius.circular(16),
         color: Colors.grey.shade200,
       ),
-      child: product.fotoProduk != null &&
-              product.fotoProduk!.isNotEmpty
+      child: product.fotoProduk != null && product.fotoProduk!.isNotEmpty
           ? ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.network(
@@ -181,17 +166,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 },
               ),
             )
-          : const Icon(
-              Icons.fastfood_outlined,
-              size: 70,
-            ),
+          : const Icon(Icons.fastfood_outlined, size: 70),
     );
   }
 
-  Widget _buildVariantCard(
-    Product product,
-    ProductVariant variant,
-  ) {
+  Widget _buildVariantCard(Product product, ProductVariant variant) {
     final prices = variant.daftarHarga
         .where((price) => price.statusAktif)
         .toList();
@@ -201,7 +180,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       variant: variant,
       prices: prices,
     );
-  }  
+  }
 }
 
 class _VariantPurchaseCard extends StatefulWidget {
@@ -216,12 +195,10 @@ class _VariantPurchaseCard extends StatefulWidget {
   });
 
   @override
-  State<_VariantPurchaseCard> createState() =>
-      _VariantPurchaseCardState();
+  State<_VariantPurchaseCard> createState() => _VariantPurchaseCardState();
 }
 
-class _VariantPurchaseCardState
-    extends State<_VariantPurchaseCard> {
+class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
   ProductPrice? _selectedPrice;
   int _quantity = 1;
 
@@ -231,8 +208,7 @@ class _VariantPurchaseCardState
 
     if (widget.prices.isNotEmpty) {
       _selectedPrice = widget.prices.firstWhere(
-        (price) =>
-            price.jenisHarga.toLowerCase() == 'ecer',
+        (price) => price.jenisHarga.toLowerCase() == 'ecer',
         orElse: () => widget.prices.first,
       );
     }
@@ -255,8 +231,7 @@ class _VariantPurchaseCardState
     return 'Rp $buffer';
   }
 
-  bool get _isWholesale =>
-      _selectedPrice?.jenisHarga.toLowerCase() == 'grosir';
+  bool get _isWholesale => _selectedPrice?.jenisHarga.toLowerCase() == 'grosir';
 
   // Validasi konversi satuan dibuat konservatif.
   // Grosir hanya dapat dipilih jika satuan minimum sama
@@ -278,8 +253,7 @@ class _VariantPurchaseCardState
       return false;
     }
 
-    return minimumUnit.toLowerCase() ==
-        saleUnit.toLowerCase();
+    return minimumUnit.toLowerCase() == saleUnit.toLowerCase();
   }
 
   bool get _meetsWholesaleMinimum {
@@ -299,12 +273,10 @@ class _VariantPurchaseCardState
   }
 
   bool get _quantityWithinStock =>
-      _quantity > 0 &&
-      _quantity <= widget.variant.stok;
+      _quantity > 0 && _quantity <= widget.variant.stok;
 
   bool get _canAddToCart {
-    if (_selectedPrice == null ||
-        widget.variant.stok <= 0) {
+    if (_selectedPrice == null || widget.variant.stok <= 0) {
       return false;
     }
 
@@ -376,7 +348,7 @@ class _VariantPurchaseCardState
       return;
     }
 
-    CartService.addItem(
+    final errorMessage = CartService.addItem(
       CartItem(
         product: widget.product,
         variant: widget.variant,
@@ -388,7 +360,8 @@ class _VariantPurchaseCardState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${widget.variant.namaVarian} ditambahkan ke keranjang.',
+          errorMessage ??
+              '${widget.variant.namaVarian} ditambahkan ke keranjang.',
         ),
       ),
     );
@@ -407,32 +380,21 @@ class _VariantPurchaseCardState
           children: [
             Text(
               variant.namaVarian,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            if (variant.beratGram != null ||
-                variant.satuanJual != null)
+            if (variant.beratGram != null || variant.satuanJual != null)
               Text(
                 _buildVariantInfo(variant),
-                style: const TextStyle(
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(color: Colors.grey),
               ),
             const SizedBox(height: 10),
-            Text(
-              'Stok: ${variant.stok}',
-              style: const TextStyle(fontSize: 15),
-            ),
+            Text('Stok: ${variant.stok}', style: const TextStyle(fontSize: 15)),
             const SizedBox(height: 12),
             if (variant.tersediaPreOrder)
               const Text(
                 'Tersedia Pre-Order',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             if (variant.tanggalMulaiPreOrder != null)
               Text(
@@ -452,10 +414,7 @@ class _VariantPurchaseCardState
             const SizedBox(height: 14),
             const Text(
               'Harga dan Pembelian',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             if (widget.prices.isEmpty)
@@ -498,29 +457,20 @@ class _VariantPurchaseCardState
                     'Minimal pembelian: '
                     '${_selectedPrice!.minimalPembelian} '
                     '${_selectedPrice!.satuanMinimal ?? ''}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                 ),
               const SizedBox(height: 12),
               const Text(
                 'Jumlah pembelian',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   IconButton(
-                    onPressed: _quantity > 1
-                        ? () => _changeQuantity(-1)
-                        : null,
-                    icon: const Icon(
-                      Icons.remove_circle_outline,
-                    ),
+                    onPressed: _quantity > 1 ? () => _changeQuantity(-1) : null,
+                    icon: const Icon(Icons.remove_circle_outline),
                   ),
                   Text(
                     '$_quantity',
@@ -533,18 +483,14 @@ class _VariantPurchaseCardState
                     onPressed: _quantity < variant.stok
                         ? () => _changeQuantity(1)
                         : null,
-                    icon: const Icon(
-                      Icons.add_circle_outline,
-                    ),
+                    icon: const Icon(Icons.add_circle_outline),
                   ),
                   if (variant.satuanJual != null)
                     Expanded(
                       child: Text(
                         variant.satuanJual!,
                         textAlign: TextAlign.end,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                        ),
+                        style: const TextStyle(color: Colors.grey),
                       ),
                     ),
                 ],
@@ -554,20 +500,14 @@ class _VariantPurchaseCardState
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
                     _purchaseMessage,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
                   ),
                 ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed:
-                      _canAddToCart ? _addToCart : null,
-                  icon: const Icon(
-                    Icons.add_shopping_cart,
-                  ),
+                  onPressed: _canAddToCart ? _addToCart : null,
+                  icon: const Icon(Icons.add_shopping_cart),
                   label: const Text('Tambah ke Keranjang'),
                 ),
               ),
@@ -585,8 +525,7 @@ class _VariantPurchaseCardState
       info.add('${variant.beratGram} gram');
     }
 
-    if (variant.satuanJual != null &&
-        variant.satuanJual!.isNotEmpty) {
+    if (variant.satuanJual != null && variant.satuanJual!.isNotEmpty) {
       info.add(variant.satuanJual!);
     }
 

@@ -13,6 +13,14 @@ class ProductPage extends StatefulWidget {
 
 class _ProductPageState extends State<ProductPage> {
   late Future<List<Product>> _productsFuture;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -82,49 +90,109 @@ class _ProductPageState extends State<ProductPage> {
           }
 
           // ======================================================
-          // DATA KOSONG
+          // DATA PRODUK + PENCARIAN
           // ======================================================
 
-          final products = snapshot.data ?? [];
+          final products = (snapshot.data ?? [])
+              .where((product) => product.statusAktif)
+              .toList();
 
-          if (products.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: _refreshProducts,
-              child: ListView(
-                children: const [
-                  SizedBox(height: 200),
-                  Center(child: Text('Belum ada produk yang tersedia.')),
-                ],
-              ),
-            );
-          }
+          final normalizedQuery = _searchQuery.trim().toLowerCase();
+          final filteredProducts = normalizedQuery.isEmpty
+              ? products
+              : products.where((product) {
+                  final name = product.namaProduk.toLowerCase();
+                  final description = (product.deskripsi ?? '').toLowerCase();
+                  return name.contains(normalizedQuery) ||
+                      description.contains(normalizedQuery);
+                }).toList();
 
-          // ======================================================
-          // DAFTAR PRODUK
-          // ======================================================
-
-          return RefreshIndicator(
-            onRefresh: _refreshProducts,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final product = products[index];
-
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            ProductDetailPage(productId: product.idProduk),
-                      ),
-                    );
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
                   },
-                  child: _buildProductCard(product),
-                );
-              },
-            ),
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: 'Cari nama atau deskripsi produk...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchQuery.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Hapus pencarian',
+                            icon: const Icon(Icons.close),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                          ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _refreshProducts,
+                  child: filteredProducts.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            const SizedBox(height: 120),
+                            Icon(
+                              products.isEmpty
+                                  ? Icons.inventory_2_outlined
+                                  : Icons.search_off,
+                              size: 56,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 12),
+                            Center(
+                              child: Text(
+                                products.isEmpty
+                                    ? 'Belum ada produk yang tersedia.'
+                                    : 'Produk tidak ditemukan.',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          ],
+                        )
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                          itemCount: filteredProducts.length,
+                          itemBuilder: (context, index) {
+                            final product = filteredProducts[index];
+
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProductDetailPage(
+                                      productId: product.idProduk,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: _buildProductCard(product),
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -132,6 +200,10 @@ class _ProductPageState extends State<ProductPage> {
   }
 
   Widget _buildProductCard(Product product) {
+    final activeVariants = product.varian
+        .where((variant) => variant.statusAktif)
+        .toList();
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
@@ -207,13 +279,13 @@ class _ProductPageState extends State<ProductPage> {
 
             const SizedBox(height: 8),
 
-            if (product.varian.isEmpty)
+            if (activeVariants.isEmpty)
               const Text(
-                'Tidak ada varian aktif.',
+                'Belum ada varian aktif.',
                 style: TextStyle(color: Colors.grey),
               )
             else
-              ...product.varian.map((variant) => _buildVariantItem(variant)),
+              ...activeVariants.map(_buildVariantItem),
           ],
         ),
       ),
@@ -221,6 +293,10 @@ class _ProductPageState extends State<ProductPage> {
   }
 
   Widget _buildVariantItem(ProductVariant variant) {
+    final activePrices = variant.daftarHarga
+        .where((price) => price.statusAktif)
+        .toList();
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
@@ -264,13 +340,13 @@ class _ProductPageState extends State<ProductPage> {
           // ======================================================
           // HARGA
           // ======================================================
-          if (variant.daftarHarga.isEmpty)
+          if (activePrices.isEmpty)
             const Text(
-              'Harga belum tersedia.',
+              'Harga aktif belum tersedia.',
               style: TextStyle(color: Colors.grey),
             )
           else
-            ...variant.daftarHarga.map(
+            ...activePrices.map(
               (price) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Row(

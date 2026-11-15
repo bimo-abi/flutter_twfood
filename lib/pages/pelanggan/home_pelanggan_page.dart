@@ -9,6 +9,8 @@ import 'product_page.dart';
 import 'profile_page.dart';
 import 'recipe_page.dart';
 import 'cart_page.dart';
+import 'order_history_page.dart';
+import 'notifikasi_page.dart';
 
 class HomePelangganPage extends StatefulWidget {
   const HomePelangganPage({super.key});
@@ -74,7 +76,7 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
         children: [
           _buildHomeContent(),
           const ProductPage(),
-          const PesananPlaceholderPage(),
+          const OrderHistoryPage(),
           const CartPage(),
           const RecipePage(),
           const ProfilePage(),
@@ -133,6 +135,18 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
         title: const Text('TWFOOD'),
         automaticallyImplyLeading: false,
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Notifikasi',
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotifikasiPage()),
+              );
+            },
+          ),
+        ],
       ),
 
       body: SafeArea(
@@ -698,36 +712,6 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
             style: const TextStyle(color: Colors.grey),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ================================================================
-// PLACEHOLDER PESANAN
-// ================================================================
-
-class PesananPlaceholderPage extends StatelessWidget {
-  const PesananPlaceholderPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pesanan'),
-        automaticallyImplyLeading: false,
-      ),
-
-      body: const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-
-          child: Text(
-            'Fitur Pesanan akan dibuat '
-            'pada step berikutnya.',
-            textAlign: TextAlign.center,
-          ),
-        ),
       ),
     );
   }

@@ -12,12 +12,10 @@ class CartItem {
     required this.price,
     this.quantity = 1,
   });
-//perhitungan subtotal harga berdasarkan quantity dan harga produk
+  //perhitungan subtotal harga berdasarkan quantity dan harga produk
   int get subtotal => price.harga * quantity;
 
-  CartItem copyWith({
-    int? quantity,
-  }) {
+  CartItem copyWith({int? quantity}) {
     return CartItem(
       product: product,
       variant: variant,

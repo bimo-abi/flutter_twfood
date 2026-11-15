@@ -37,6 +37,7 @@ class SessionGate extends StatefulWidget {
 class _SessionGateState extends State<SessionGate> {
   Widget? _destination;
   String? _errorMessage;
+  bool _accessDenied = false;
 
   @override
   void initState() {
@@ -48,6 +49,7 @@ class _SessionGateState extends State<SessionGate> {
     setState(() {
       _destination = null;
       _errorMessage = null;
+      _accessDenied = false;
     });
 
     try {
@@ -59,14 +61,43 @@ class _SessionGateState extends State<SessionGate> {
         return;
       }
 
-      // 2. Validasi token melalui API backend.
+      // 2. Validasi token melalui backend.
       final response = await AuthService.me();
 
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+        final responseData = jsonDecode(response.body);
+
+        if (responseData is! Map<String, dynamic> ||
+            responseData['data'] is! Map<String, dynamic>) {
+          throw const FormatException('Format profil pengguna tidak valid.');
+        }
 
         final data = responseData['data'] as Map<String, dynamic>;
-        final userId = int.tryParse(data['id_pengguna'].toString());
+
+        // 3. Pastikan akun memiliki role pelanggan.
+        final peran = data['peran'];
+
+        if (peran != 'pelanggan') {
+          await TokenStorage.deleteToken();
+          CartService.resetSession();
+
+          if (!mounted) return;
+
+          setState(() {
+            _errorMessage =
+                'Akun ini tidak memiliki akses ke aplikasi pelanggan.';
+            _accessDenied = true;
+          });
+
+          return;
+        }
+
+        // 4. Validasi ID pengguna.
+        final rawUserId = data['id_pengguna'];
+
+        final userId = rawUserId is int
+            ? rawUserId
+            : int.tryParse(rawUserId?.toString() ?? '');
 
         if (userId == null || userId <= 0) {
           throw const FormatException(
@@ -74,10 +105,10 @@ class _SessionGateState extends State<SessionGate> {
           );
         }
 
-        // 3. Muat keranjang sesuai akun yang tervalidasi.
+        // 5. Muat keranjang sesuai akun yang tervalidasi.
         await CartService.initializeForUser(userId);
 
-        // 4. Buka halaman utama.
+        // 6. Buka halaman utama pelanggan.
         _showDestination(const HomePelangganPage());
         return;
       }
@@ -90,7 +121,7 @@ class _SessionGateState extends State<SessionGate> {
         return;
       }
 
-      // Kesalahan server tidak otomatis menghapus token.
+      // Error server tidak otomatis menghapus token.
       throw Exception('Server mengembalikan status ${response.statusCode}.');
     } catch (e) {
       if (!mounted) return;
@@ -111,7 +142,13 @@ class _SessionGateState extends State<SessionGate> {
     setState(() {
       _destination = destination;
       _errorMessage = null;
+      _accessDenied = false;
     });
+  }
+
+  void _backToLogin() {
+    CartService.resetSession();
+    _showDestination(const LoginPage());
   }
 
   @override
@@ -124,13 +161,17 @@ class _SessionGateState extends State<SessionGate> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+                Icon(
+                  _accessDenied ? Icons.lock_outline : Icons.wifi_off,
+                  size: 48,
+                  color: Colors.grey,
+                ),
                 const SizedBox(height: 16),
                 Text(_errorMessage!, textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: _restoreSession,
-                  child: const Text('Coba Lagi'),
+                  onPressed: _accessDenied ? _backToLogin : _restoreSession,
+                  child: Text(_accessDenied ? 'Kembali ke Login' : 'Coba Lagi'),
                 ),
               ],
             ),

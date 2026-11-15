@@ -17,24 +17,18 @@ class OutletService {
     final responseData = jsonDecode(response.body);
 
     if (responseData is! Map<String, dynamic>) {
-      throw Exception(
-        'Format response outlet tidak valid.',
-      );
+      throw Exception('Format response outlet tidak valid.');
     }
 
     final rawData = responseData['data'];
 
     if (rawData is! List) {
-      throw Exception(
-        'Data outlet tidak valid.',
-      );
+      throw Exception('Data outlet tidak valid.');
     }
 
     return rawData
         .whereType<Map<String, dynamic>>()
-        .map(
-          (item) => Outlet.fromJson(item),
-        )
+        .map((item) => Outlet.fromJson(item))
         .toList();
   }
 }

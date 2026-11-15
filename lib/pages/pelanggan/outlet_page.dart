@@ -31,17 +31,12 @@ class _OutletPageState extends State<OutletPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Outlet TWFOOD'),
-      ),
+      appBar: AppBar(title: const Text('Outlet TWFOOD')),
       body: FutureBuilder<List<Outlet>>(
         future: _outletsFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -51,10 +46,7 @@ class _OutletPageState extends State<OutletPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 60,
-                    ),
+                    const Icon(Icons.error_outline, size: 60),
                     const SizedBox(height: 16),
                     const Text(
                       'Gagal mengambil data outlet.',
@@ -88,11 +80,7 @@ class _OutletPageState extends State<OutletPage> {
               child: ListView(
                 children: const [
                   SizedBox(height: 200),
-                  Center(
-                    child: Text(
-                      'Belum ada outlet yang tersedia.',
-                    ),
-                  ),
+                  Center(child: Text('Belum ada outlet yang tersedia.')),
                 ],
               ),
             );
@@ -129,16 +117,12 @@ class _OutletPageState extends State<OutletPage> {
 
             Text(
               outlet.namaOutlet,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 16),
 
-            if (outlet.alamat != null &&
-                outlet.alamat!.isNotEmpty)
+            if (outlet.alamat != null && outlet.alamat!.isNotEmpty)
               _buildInfoRow(
                 Icons.location_on_outlined,
                 'Alamat',
@@ -155,8 +139,7 @@ class _OutletPageState extends State<OutletPage> {
               ),
             ],
 
-            if (outlet.latitude != null &&
-                outlet.longitude != null) ...[
+            if (outlet.latitude != null && outlet.longitude != null) ...[
               const SizedBox(height: 12),
               _buildInfoRow(
                 Icons.map_outlined,
@@ -165,23 +148,16 @@ class _OutletPageState extends State<OutletPage> {
               ),
             ],
 
-            if (outlet.deskripsi != null &&
-                outlet.deskripsi!.isNotEmpty) ...[
+            if (outlet.deskripsi != null && outlet.deskripsi!.isNotEmpty) ...[
               const SizedBox(height: 16),
               const Text(
                 'Deskripsi',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
                 outlet.deskripsi!,
-                style: const TextStyle(
-                  fontSize: 15,
-                  height: 1.5,
-                ),
+                style: const TextStyle(fontSize: 15, height: 1.5),
               ),
             ],
 
@@ -189,10 +165,7 @@ class _OutletPageState extends State<OutletPage> {
 
             const Text(
               'Jam Operasional',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 10),
@@ -200,14 +173,10 @@ class _OutletPageState extends State<OutletPage> {
             if (outlet.jamOperasional.isEmpty)
               const Text(
                 'Belum ada informasi jam operasional.',
-                style: TextStyle(
-                  color: Colors.grey,
-                ),
+                style: TextStyle(color: Colors.grey),
               )
             else
-              ...outlet.jamOperasional.map(
-                (jam) => _buildOperatingHour(jam),
-              ),
+              ...outlet.jamOperasional.map((jam) => _buildOperatingHour(jam)),
           ],
         ),
       ),
@@ -222,15 +191,13 @@ class _OutletPageState extends State<OutletPage> {
         borderRadius: BorderRadius.circular(12),
         color: Colors.grey.shade200,
       ),
-      child: outlet.foto != null &&
-              outlet.foto!.isNotEmpty
+      child: outlet.foto != null && outlet.foto!.isNotEmpty
           ? ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
                 outlet.foto!,
                 fit: BoxFit.cover,
-                errorBuilder:
-                    (context, error, stackTrace) {
+                errorBuilder: (context, error, stackTrace) {
                   return const Icon(
                     Icons.image_not_supported_outlined,
                     size: 60,
@@ -238,37 +205,21 @@ class _OutletPageState extends State<OutletPage> {
                 },
               ),
             )
-          : const Icon(
-              Icons.store_outlined,
-              size: 60,
-            ),
+          : const Icon(Icons.store_outlined, size: 60),
     );
   }
 
-  Widget _buildInfoRow(
-    IconData icon,
-    String label,
-    String value,
-  ) {
+  Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 22,
-        ),
+        Icon(icon, size: 22),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(value),
             ],
@@ -278,28 +229,18 @@ class _OutletPageState extends State<OutletPage> {
     );
   }
 
-  Widget _buildOperatingHour(
-    OutletOperatingHour jam,
-  ) {
+  Widget _buildOperatingHour(OutletOperatingHour jam) {
     final String waktu;
 
     if (jam.tutup) {
       waktu = 'Tutup';
-    } else if ((jam.jamBuka == null ||
-            jam.jamBuka!.isEmpty) &&
-        (jam.jamTutup == null ||
-            jam.jamTutup!.isEmpty)) {
+    } else if ((jam.jamBuka == null || jam.jamBuka!.isEmpty) &&
+        (jam.jamTutup == null || jam.jamTutup!.isEmpty)) {
       waktu = 'Jam belum tersedia';
     } else {
-      final jamBuka =
-          jam.jamBuka?.isNotEmpty == true
-              ? jam.jamBuka!
-              : '-';
+      final jamBuka = jam.jamBuka?.isNotEmpty == true ? jam.jamBuka! : '-';
 
-      final jamTutup =
-          jam.jamTutup?.isNotEmpty == true
-              ? jam.jamTutup!
-              : '-';
+      final jamTutup = jam.jamTutup?.isNotEmpty == true ? jam.jamTutup! : '-';
 
       waktu = '$jamBuka - $jamTutup';
     }
@@ -307,23 +248,18 @@ class _OutletPageState extends State<OutletPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             child: Text(
               jam.hari,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
           Text(
             waktu,
             style: TextStyle(
-              color: jam.tutup
-                  ? Colors.grey
-                  : null,
+              color: jam.tutup ? Colors.grey : null,
               fontWeight: FontWeight.w500,
             ),
           ),

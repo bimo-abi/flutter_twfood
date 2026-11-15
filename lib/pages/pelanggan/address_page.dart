@@ -22,7 +22,6 @@ class _AddressPageState extends State<AddressPage> {
     _addressesFuture = AddressService.getAddresses();
   }
 
-
   // REFRESH ALAMAT
   Future<void> _refreshAddresses() async {
     setState(() {
@@ -32,15 +31,11 @@ class _AddressPageState extends State<AddressPage> {
     await _addressesFuture;
   }
 
-
   // TAMBAH ALAMAT
   Future<void> _openAddAddressPage() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AddAddressPage(
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => const AddAddressPage()),
     );
 
     if (result == true) {
@@ -49,15 +44,11 @@ class _AddressPageState extends State<AddressPage> {
   }
 
   // EDIT ALAMAT
-  Future<void> _openEditAddressPage(
-    Address address,
-  ) async {
+  Future<void> _openEditAddressPage(Address address) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditAddressPage(
-          address: address,
-        ),
+        builder: (context) => EditAddressPage(address: address),
       ),
     );
 
@@ -67,9 +58,7 @@ class _AddressPageState extends State<AddressPage> {
   }
 
   // HAPUS ALAMAT
-  Future<void> _deleteAddress(
-    Address address,
-  ) async {
+  Future<void> _deleteAddress(Address address) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -102,21 +91,15 @@ class _AddressPageState extends State<AddressPage> {
     }
 
     try {
-      await AddressService.deleteAddress(
-        idAlamat: address.idAlamat,
-      );
+      await AddressService.deleteAddress(idAlamat: address.idAlamat);
 
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Alamat berhasil dihapus.',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Alamat berhasil dihapus.')));
 
       // Refresh daftar alamat setelah berhasil dihapus
       await _refreshAddresses();
@@ -125,13 +108,8 @@ class _AddressPageState extends State<AddressPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Gagal menghapus alamat: $e',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gagal menghapus alamat: $e')));
     }
   }
 
@@ -152,13 +130,9 @@ class _AddressPageState extends State<AddressPage> {
       body: FutureBuilder<List<Address>>(
         future: _addressesFuture,
         builder: (context, snapshot) {
-
           // LOADING
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           // ERROR
@@ -167,13 +141,9 @@ class _AddressPageState extends State<AddressPage> {
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 60,
-                    ),
+                    const Icon(Icons.error_outline, size: 60),
                     const SizedBox(height: 16),
                     const Text(
                       'Gagal mengambil daftar alamat.',
@@ -191,9 +161,7 @@ class _AddressPageState extends State<AddressPage> {
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: _refreshAddresses,
-                      child: const Text(
-                        'Coba Lagi',
-                      ),
+                      child: const Text('Coba Lagi'),
                     ),
                   ],
                 ),
@@ -220,9 +188,7 @@ class _AddressPageState extends State<AddressPage> {
                   Center(
                     child: Text(
                       'Belum ada alamat tersimpan.',
-                      style: TextStyle(
-                        fontSize: 16,
-                      ),
+                      style: TextStyle(fontSize: 16),
                     ),
                   ),
                   SizedBox(height: 8),
@@ -231,9 +197,7 @@ class _AddressPageState extends State<AddressPage> {
                       'Tekan tombol + di kanan atas '
                       'untuk menambahkan alamat.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(color: Colors.grey),
                     ),
                   ),
                 ],
@@ -260,28 +224,19 @@ class _AddressPageState extends State<AddressPage> {
   }
 
   // CARD ALAMAT
-  Widget _buildAddressCard(
-    Address address,
-  ) {
+  Widget _buildAddressCard(Address address) {
     return Card(
-      margin: const EdgeInsets.only(
-        bottom: 14,
-      ),
+      margin: const EdgeInsets.only(bottom: 14),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // LABEL + UTAMA
             Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.location_on_outlined,
-                ),
+                const Icon(Icons.location_on_outlined),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -294,26 +249,19 @@ class _AddressPageState extends State<AddressPage> {
                 ),
                 if (address.alamatUtama)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(
+                    padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 5,
                     ),
-                    decoration:
-                        BoxDecoration(
-                      borderRadius:
-                          BorderRadius.circular(
-                        20,
-                      ),
-                      color:
-                          Colors.grey.shade200,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.grey.shade200,
                     ),
                     child: const Text(
                       'Utama',
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight:
-                            FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -322,13 +270,10 @@ class _AddressPageState extends State<AddressPage> {
 
             const SizedBox(height: 14),
 
-           //nama penerima
+            //nama penerima
             Text(
               address.namaPenerima,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
 
             const SizedBox(height: 4),
@@ -336,9 +281,7 @@ class _AddressPageState extends State<AddressPage> {
             //nomor telepon
             Text(
               address.nomorTelepon,
-              style: const TextStyle(
-                color: Colors.grey,
-              ),
+              style: const TextStyle(color: Colors.grey),
             ),
 
             const SizedBox(height: 12),
@@ -346,10 +289,7 @@ class _AddressPageState extends State<AddressPage> {
             //alamat lengkap
             Text(
               address.alamatLengkap,
-              style: const TextStyle(
-                fontSize: 15,
-                height: 1.5,
-              ),
+              style: const TextStyle(fontSize: 15, height: 1.5),
             ),
 
             const SizedBox(height: 8),
@@ -359,31 +299,21 @@ class _AddressPageState extends State<AddressPage> {
               '${address.kota}, '
               '${address.provinsi} '
               '${address.kodePos}',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
 
             // Koordinat
-            if (address.latitude != null &&
-                address.longitude != null) ...[
+            if (address.latitude != null && address.longitude != null) ...[
               const SizedBox(height: 10),
               Row(
                 children: [
-                  const Icon(
-                    Icons.map_outlined,
-                    size: 18,
-                  ),
+                  const Icon(Icons.map_outlined, size: 18),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       '${address.latitude}, '
                       '${address.longitude}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey,
-                      ),
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
                     ),
                   ),
                 ],
@@ -394,23 +324,15 @@ class _AddressPageState extends State<AddressPage> {
 
             // TOMBOL EDIT DAN HAPUS
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-
                 //tombol edit
                 OutlinedButton.icon(
                   onPressed: () {
-                    _openEditAddressPage(
-                      address,
-                    );
+                    _openEditAddressPage(address);
                   },
-                  icon: const Icon(
-                    Icons.edit_outlined,
-                  ),
-                  label: const Text(
-                    'Edit',
-                  ),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Edit'),
                 ),
 
                 const SizedBox(width: 8),
@@ -418,16 +340,10 @@ class _AddressPageState extends State<AddressPage> {
                 //tombol hapus
                 OutlinedButton.icon(
                   onPressed: () {
-                    _deleteAddress(
-                      address,
-                    );
+                    _deleteAddress(address);
                   },
-                  icon: const Icon(
-                    Icons.delete_outline,
-                  ),
-                  label: const Text(
-                    'Hapus',
-                  ),
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Hapus'),
                 ),
               ],
             ),
