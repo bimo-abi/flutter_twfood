@@ -7,6 +7,7 @@ import 'pages/pelanggan/home_pelanggan_page.dart';
 import 'services/auth_service.dart';
 import 'services/cart_service.dart';
 import 'services/token_storage.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +22,7 @@ class TwfoodApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'TWFOOD',
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.green),
+      theme: AppTheme.lightTheme,
       home: const SessionGate(),
     );
   }

@@ -54,21 +54,19 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             ..clear()
             ..addAll(result.orders);
         } else {
-          // Hindari kartu ganda jika API mengembalikan item yang sama
-          // pada batas dua halaman saat ada pesanan baru.
           final existingIds = _orders.map((order) => order.idPesanan).toSet();
-          _orders.addAll(
-            result.orders.where((order) => !existingIds.contains(order.idPesanan)),
-          );
+          for (final order in result.orders) {
+            if (existingIds.add(order.idPesanan)) _orders.add(order);
+          }
         }
         _currentPage = result.currentPage;
         _lastPage = result.lastPage;
         _total = result.total;
         _error = null;
       });
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = error.toString());
     } finally {
       if (mounted) {
         setState(() {
@@ -82,6 +80,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pesanan Saya'),
@@ -89,90 +89,155 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         actions: [
           IconButton(
             tooltip: 'Muat ulang',
-            onPressed: () => _load(refresh: true),
-            icon: const Icon(Icons.refresh),
+            onPressed: _refreshing ? null : () => _load(refresh: true),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null && _orders.isEmpty
-          ? _errorView()
-          : _orders.isEmpty
-          ? _emptyView()
-          : RefreshIndicator(
-              onRefresh: () => _load(refresh: true),
-              child: ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                itemCount: _orders.length + 1 + (_error != null ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (_error != null && index == 0) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        'Pembaruan gagal: $_error',
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ? _errorView()
+              : _orders.isEmpty
+                  ? _emptyView()
+                  : RefreshIndicator(
+                      onRefresh: () => _load(refresh: true),
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                        itemCount: _orders.length + 2 + (_error != null ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == 0) return _summaryHeader(colors);
+                          if (_error != null && index == 1) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Material(
+                                color: colors.errorContainer,
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Text(
+                                    'Pembaruan gagal: $_error',
+                                    style: TextStyle(color: colors.onErrorContainer),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          final offset = _error != null ? 2 : 1;
+                          final orderIndex = index - offset;
+                          if (orderIndex == _orders.length) return _footer();
+                          if (orderIndex < 0 || orderIndex > _orders.length) {
+                            return const SizedBox.shrink();
+                          }
+                          final order = _orders[orderIndex];
+                          return _OrderCard(
+                            order: order,
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => OrderDetailPage(
+                                    idPesanan: order.idPesanan,
+                                  ),
+                                ),
+                              );
+                              if (mounted) _load(refresh: true);
+                            },
+                          );
+                        },
                       ),
-                    );
-                  }
-                  final orderIndex = index - (_error != null ? 1 : 0);
-                  if (orderIndex == _orders.length) return _footer();
-                  return _OrderCard(
-                    order: _orders[orderIndex],
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => OrderDetailPage(
-                            idPesanan: _orders[orderIndex].idPesanan,
-                          ),
-                        ),
-                      );
-                      if (mounted) _load(refresh: true);
-                    },
-                  );
-                },
-              ),
-            ),
+                    ),
     );
   }
 
-  Widget _errorView() => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+  Widget _summaryHeader(ColorScheme colors) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
         children: [
-          const Icon(Icons.wifi_off, size: 44),
-          const SizedBox(height: 12),
-          Text(_error!, textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () => _load(refresh: true),
-            child: const Text('Coba Lagi'),
+          Expanded(
+            child: Text(
+              'Pantau pesanan dan pembayaranmu di sini.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: colors.primaryContainer,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '$_total pesanan',
+              style: TextStyle(
+                color: colors.onPrimaryContainer,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
 
-  Widget _emptyView() => RefreshIndicator(
-    onRefresh: () => _load(refresh: true),
-    child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: const [
-        SizedBox(height: 140),
-        Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey),
-        SizedBox(height: 16),
-        Center(child: Text('Belum ada pesanan')),
-        SizedBox(height: 8),
-        Center(child: Text('Pesanan yang dibuat akan muncul di sini.')),
-      ],
-    ),
-  );
+  Widget _errorView() {
+    final colors = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off_rounded, size: 48, color: colors.error),
+            const SizedBox(height: 12),
+            Text(_error!, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => _load(refresh: true),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyView() {
+    final colors = Theme.of(context).colorScheme;
+    return RefreshIndicator(
+      onRefresh: () => _load(refresh: true),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 110),
+          Icon(Icons.receipt_long_outlined, size: 68, color: colors.outline),
+          const SizedBox(height: 16),
+          const Center(
+            child: Text(
+              'Belum ada pesanan',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              'Pesanan yang kamu buat akan muncul di sini.',
+              style: TextStyle(color: colors.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _footer() {
+    final colors = Theme.of(context).colorScheme;
     if (_loadingMore) {
       return const Padding(
         padding: EdgeInsets.all(20),
@@ -181,10 +246,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     }
     if (_currentPage < _lastPage) {
       return Padding(
-        padding: const EdgeInsets.all(12),
-        child: OutlinedButton(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: OutlinedButton.icon(
           onPressed: () => _load(),
-          child: const Text('Muat pesanan lainnya'),
+          icon: const Icon(Icons.expand_more_rounded),
+          label: const Text('Muat pesanan lainnya'),
         ),
       );
     }
@@ -193,7 +259,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       child: Center(
         child: Text(
           'Menampilkan ${_orders.length} dari $_total pesanan',
-          style: const TextStyle(color: Colors.grey),
+          style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
         ),
       ),
     );
@@ -203,15 +269,23 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
 class _OrderCard extends StatelessWidget {
   final CustomerOrder order;
   final VoidCallback onTap;
+
   const _OrderCard({required this.order, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final firstItem = order.items.isEmpty ? null : order.items.first;
     final otherCount = order.items.length - 1;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -224,48 +298,104 @@ class _OrderCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       order.nomorPesanan,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
                   ),
                   _StatusChip(text: _statusLabel(order.statusPesanan)),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                _formatDate(order.createdAt),
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-              const Divider(height: 22),
-              if (firstItem != null)
-                Text(
-                  '${firstItem.namaProduk} • ${firstItem.namaVarian} × ${firstItem.jumlah}',
-                ),
-              if (otherCount > 0)
-                Text(
-                  'dan $otherCount produk lainnya',
-                  style: const TextStyle(color: Colors.grey),
-                ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
               Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Pembayaran: ${_statusLabel(order.statusPembayaran)}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
+                  Icon(Icons.calendar_today_outlined,
+                      size: 13, color: colors.onSurfaceVariant),
+                  const SizedBox(width: 6),
                   Text(
-                    _rupiah(order.totalPesanan),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    _formatDate(order.createdAt),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              const Align(
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Divider(height: 1, color: colors.outlineVariant),
+              ),
+              if (firstItem != null) ...[
+                Text(
+                  firstItem.namaProduk,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${firstItem.namaVarian} · ${firstItem.jumlah} item',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                ),
+              ] else
+                Text('Rincian produk tidak tersedia',
+                    style: TextStyle(color: colors.onSurfaceVariant)),
+              if (otherCount > 0) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '+ $otherCount produk lainnya',
+                  style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Status pembayaran',
+                            style: TextStyle(
+                                color: colors.onSurfaceVariant, fontSize: 11)),
+                        const SizedBox(height: 3),
+                        Text(
+                          _statusLabel(order.statusPembayaran),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('Total pesanan',
+                          style: TextStyle(
+                              color: colors.onSurfaceVariant, fontSize: 11)),
+                      const SizedBox(height: 3),
+                      Text(
+                        _rupiah(order.totalPesanan),
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  'Lihat detail  ›',
-                  style: TextStyle(color: Colors.green),
+                  'Lihat detail  →',
+                  style: TextStyle(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -279,12 +409,45 @@ class _OrderCard extends StatelessWidget {
 class _StatusChip extends StatelessWidget {
   final String text;
   const _StatusChip({required this.text});
+
   @override
-  Widget build(BuildContext context) => Chip(
-    label: Text(text, style: const TextStyle(fontSize: 11)),
-    visualDensity: VisualDensity.compact,
-    padding: EdgeInsets.zero,
-  );
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final normalized = text.toLowerCase();
+    final Color background;
+    final Color foreground;
+
+    if (normalized.contains('batal') || normalized.contains('gagal') ||
+        normalized.contains('kedaluwarsa')) {
+      background = colors.errorContainer;
+      foreground = colors.onErrorContainer;
+    } else if (normalized.contains('selesai') || normalized.contains('diterima')) {
+      background = colors.secondaryContainer;
+      foreground = colors.onSecondaryContainer;
+    } else if (normalized.contains('menunggu') || normalized.contains('belum')) {
+      background = colors.tertiaryContainer;
+      foreground = colors.onTertiaryContainer;
+    } else {
+      background = colors.primaryContainer;
+      foreground = colors.onPrimaryContainer;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: foreground,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
 }
 
 String _statusLabel(String value) {
@@ -317,7 +480,7 @@ String _rupiah(int value) =>
 String _formatDate(DateTime? value) {
   if (value == null) return '-';
   final local = value.toLocal();
-  final d = local.day.toString().padLeft(2, '0');
-  final m = local.month.toString().padLeft(2, '0');
-  return '$d/$m/${local.year} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  final day = local.day.toString().padLeft(2, '0');
+  final month = local.month.toString().padLeft(2, '0');
+  return '$day/$month/${local.year} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
 }

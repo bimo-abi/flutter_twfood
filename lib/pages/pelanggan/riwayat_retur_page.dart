@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_colors.dart';
+
 import '../../models/retur.dart';
 import '../../services/retur_service.dart';
 import 'detail_retur_page.dart';
@@ -76,7 +78,7 @@ class _RiwayatReturPageState extends State<RiwayatReturPage> {
           : _error != null && _returns.isEmpty
               ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center), const SizedBox(height: 12), FilledButton(onPressed: () => _load(refresh: true), child: const Text('Coba lagi'))])))
               : _returns.isEmpty
-                  ? RefreshIndicator(onRefresh: () => _load(refresh: true), child: ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [SizedBox(height: 140), Icon(Icons.assignment_outlined, size: 60, color: Colors.grey), SizedBox(height: 12), Center(child: Text('Belum ada pengajuan retur.'))]))
+                  ? RefreshIndicator(onRefresh: () => _load(refresh: true), child: ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [SizedBox(height: 140), Icon(Icons.assignment_outlined, size: 60, color: AppColors.textSecondary), SizedBox(height: 12), Center(child: Text('Belum ada pengajuan retur.'))]))
                   : RefreshIndicator(
                       onRefresh: () => _load(refresh: true),
                       child: ListView.builder(
@@ -97,6 +99,9 @@ class _RiwayatReturPageState extends State<RiwayatReturPage> {
                           final item = _returns[index];
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
+                            color: AppColors.surface,
+                            elevation: 1,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: ListTile(
                               title: Text(item.nomorRetur, style: const TextStyle(fontWeight: FontWeight.bold)),
                               subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text('Pesanan: ${item.nomorPesanan ?? item.idPesanan}\nStatus: ${_status(item.statusRetur)}\nBukti: ${item.proofs.length} file')),
@@ -108,7 +113,7 @@ class _RiwayatReturPageState extends State<RiwayatReturPage> {
                         },
                       ),
                     ),
-      bottomNavigationBar: !_loading && _returns.isNotEmpty ? Padding(padding: const EdgeInsets.all(12), child: Text('Menampilkan ${_returns.length} dari $_total pengajuan', textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey))) : null,
+      bottomNavigationBar: !_loading && _returns.isNotEmpty ? Padding(padding: const EdgeInsets.all(12), child: Text('Menampilkan ${_returns.length} dari $_total pengajuan', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary))) : null,
     );
   }
 }

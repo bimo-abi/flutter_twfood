@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/address.dart';
 import '../../services/address_service.dart';
+import '../../theme/app_colors.dart';
 import 'add_address_page.dart';
 
 /// Halaman pemilihan alamat yang mengembalikan alamat terpilih
@@ -80,7 +81,9 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Pilih Alamat Pengiriman')),
-      body: FutureBuilder<List<Address>>(
+      body: Container(
+        color: AppColors.background,
+        child: FutureBuilder<List<Address>>(
         future: _addressesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -170,6 +173,7 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
           );
         },
       ),
+        ),
       bottomNavigationBar: FutureBuilder<List<Address>>(
         future: _addressesFuture,
         builder: (context, snapshot) {
@@ -198,14 +202,17 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      color: AppColors.surface,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         side: BorderSide(
           color: isSelected
-              ? Theme.of(context).colorScheme.primary
+              ? AppColors.primary
               : Colors.transparent,
           width: 1.5,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: RadioGroup<int>(
         groupValue: _selectedAddressId,
@@ -217,7 +224,7 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
               Expanded(
                 child: Text(
                   address.label,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
               ),
               if (address.alamatUtama)

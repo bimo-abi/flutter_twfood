@@ -163,7 +163,16 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Detail Pesanan')),
+      appBar: AppBar(
+        title: const Text('Detail Pesanan'),
+        actions: [
+          IconButton(
+            tooltip: 'Muat ulang',
+            onPressed: _reload,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
+      ),
       body: FutureBuilder<CustomerOrder>(
         future: _future,
         builder: (context, snapshot) {
@@ -203,6 +212,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
+                _OrderStatusHeader(order: order),
+                const SizedBox(height: 12),
                 _section(
                   title: 'Informasi Pesanan',
                   children: [
@@ -529,7 +540,13 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   }
 
   Widget _section({required String title, required List<Widget> children}) {
+    final colors = Theme.of(context).colorScheme;
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -574,7 +591,105 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   }
 }
 
-String _label(String value) => value.replaceAll('_', ' ');
+class _OrderStatusHeader extends StatelessWidget {
+  final CustomerOrder order;
+
+  const _OrderStatusHeader({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final status = _label(order.statusPesanan);
+    final normalized = order.statusPesanan.toLowerCase();
+    final Color background;
+    final Color foreground;
+    final IconData icon;
+
+    if (normalized == 'dibatalkan') {
+      background = colors.errorContainer;
+      foreground = colors.onErrorContainer;
+      icon = Icons.cancel_outlined;
+    } else if (normalized == 'diterima' || normalized == 'selesai') {
+      background = colors.secondaryContainer;
+      foreground = colors.onSecondaryContainer;
+      icon = Icons.check_circle_outline_rounded;
+    } else if (normalized == 'menunggu_pembayaran') {
+      background = colors.tertiaryContainer;
+      foreground = colors.onTertiaryContainer;
+      icon = Icons.hourglass_top_rounded;
+    } else {
+      background = colors.primaryContainer;
+      foreground = colors.onPrimaryContainer;
+      icon = Icons.local_shipping_outlined;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: foreground, size: 30),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Status pesanan',
+                  style: TextStyle(color: foreground.withValues(alpha: 0.8), fontSize: 12),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  status,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  order.nomorPesanan,
+                  style: TextStyle(color: foreground, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _label(String value) {
+  const labels = {
+    'menunggu_pembayaran': 'Menunggu pembayaran',
+    'sedang_diproses': 'Sedang diproses',
+    'siap_diambil': 'Siap diambil',
+    'siap_dikirim': 'Siap dikirim',
+    'dalam_pengiriman': 'Dalam pengiriman',
+    'diterima': 'Diterima',
+    'selesai': 'Selesai',
+    'dibatalkan': 'Dibatalkan',
+    'belum_dibayar': 'Belum dibayar',
+    'dp_dibayar': 'DP dibayar',
+    'sebagian_dibayar': 'Dibayar sebagian',
+    'lunas': 'Lunas',
+    'kadaluarsa': 'Kedaluwarsa',
+    'gagal': 'Gagal',
+    'penuh': 'Pembayaran penuh',
+    'pelunasan': 'Pelunasan',
+    'delivery': 'Pengiriman',
+    'pickup': 'Ambil di outlet',
+    'reguler': 'Reguler',
+    'pre_order': 'Pre-order',
+  };
+  return labels[value] ?? value.replaceAll('_', ' ');
+}
 
 String _money(int value) =>
     'Rp ${value.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => '.')}';

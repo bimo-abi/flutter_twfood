@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../services/auth_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -96,9 +98,6 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    // Untuk saat ini Toko/Horeca belum dikirim ke API.
-    // Kita selesaikan UI profil bisnis terlebih dahulu.
-
     try {
       Map<String, dynamic>? profilBisnis;
 
@@ -185,8 +184,12 @@ class _RegisterPageState extends State<RegisterPage> {
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,
-      prefixIcon: Icon(icon),
-      border: const OutlineInputBorder(),
+      prefixIcon: Icon(icon, color: AppColors.textSecondary),
+      filled: true,
+      fillColor: AppColors.surface,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
     );
   }
 
@@ -200,17 +203,11 @@ class _RegisterPageState extends State<RegisterPage> {
       children: [
         const SizedBox(height: 28),
 
-        const Text(
-          'Profil Bisnis',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
+        Text('Profil Bisnis', style: AppTextStyles.headingSmall),
 
         const SizedBox(height: 8),
 
-        const Text(
-          'Lengkapi data bisnis untuk pelanggan Toko/Horeca.',
-          style: TextStyle(fontSize: 14, color: Colors.grey),
-        ),
+        Text('Lengkapi data bisnis untuk pelanggan Toko/Horeca.', style: AppTextStyles.bodySmall),
 
         const SizedBox(height: 20),
 
@@ -406,31 +403,35 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Register TWFOOD')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text('Buat Akun'), backgroundColor: AppColors.background, elevation: 0),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 10),
-
-                const Text(
-                  'Buat Akun',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-
-                const SizedBox(height: 8),
-
-                const Text(
-                  'Daftar sebagai pelanggan TWFOOD',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-
-                const SizedBox(height: 30),
-
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Form(
+                key: _formKey,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Container(
+                    width: 64, height: 64, alignment: Alignment.center,
+                    decoration: BoxDecoration(color: AppColors.secondary, borderRadius: BorderRadius.circular(20)),
+                    child: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white, size: 34),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Bergabung dengan TWFOOD', style: AppTextStyles.headingLarge, textAlign: TextAlign.center),
+                  const SizedBox(height: 6),
+                  Text('Buat akun pelanggan untuk mulai menikmati produk kami.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary), textAlign: TextAlign.center),
+                  const SizedBox(height: 24),
+                  Card(
+                    color: AppColors.surface, elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: AppColors.border)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        Text('Informasi Akun', style: AppTextStyles.headingSmall),
+                        const SizedBox(height: 18),
                 // DATA DASAR
                 TextFormField(
                   controller: _namaController,
@@ -514,7 +515,11 @@ class _RegisterPageState extends State<RegisterPage> {
                         });
                       },
                     ),
-                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -551,7 +556,11 @@ class _RegisterPageState extends State<RegisterPage> {
                         });
                       },
                     ),
-                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -571,10 +580,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 // JENIS PELANGGAN
                 DropdownButtonFormField<String>(
                   initialValue: _jenisPelanggan,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Jenis Pelanggan',
-                    prefixIcon: Icon(Icons.category_outlined),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.category_outlined),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
                   ),
                   items: const [
                     DropdownMenuItem(value: 'umum', child: Text('Umum')),
@@ -617,7 +629,13 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ),
                 ),
-              ],
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text('Dengan mendaftar, data akun akan diproses sesuai ketentuan TWFOOD.', style: AppTextStyles.bodySmall, textAlign: TextAlign.center),
+                ]),
+              ),
             ),
           ),
         ),

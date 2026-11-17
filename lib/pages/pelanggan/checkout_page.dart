@@ -11,6 +11,8 @@ import '../../services/cart_service.dart';
 import '../../services/order_service.dart';
 import '../../services/payment_service.dart';
 import '../../services/outlet_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 import 'address_selection_page.dart';
 import 'order_success_page.dart';
 
@@ -295,7 +297,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       body: items.isEmpty
           ? const Center(child: Text('Keranjang masih kosong.'))
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
                 _buildOrderTypeCard(),
                 const SizedBox(height: 12),
@@ -330,7 +332,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Buat Pesanan'),
+                    : const Text('Buat Pesanan Sekarang'),
               ),
             ),
     );
@@ -339,6 +341,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget _buildOrderTypeCard() {
     final isPreOrder = _orderType == _preOrder;
     return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -346,7 +354,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           children: [
             const Text(
               'Jenis Pesanan',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: AppTextStyles.headingSmall,
             ),
             const SizedBox(height: 8),
             Row(
@@ -355,7 +363,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   isPreOrder
                       ? Icons.event_available
                       : Icons.inventory_2_outlined,
-                  color: isPreOrder ? Colors.blue : Colors.green,
+                  color: isPreOrder ? AppColors.accent : AppColors.secondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -369,7 +377,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               isPreOrder
                   ? 'Pesanan ini masuk ke pencatatan kebutuhan produksi dan tidak mengurangi stok reguler.'
                   : 'Pesanan ini menggunakan stok reguler yang tersedia saat checkout.',
-              style: const TextStyle(color: Colors.black54),
+              style: AppTextStyles.bodySmall,
             ),
             if (isPreOrder)
               FutureBuilder<bool>(
@@ -386,7 +394,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       padding: EdgeInsets.only(top: 8),
                       child: Text(
                         'Akun atau periode pre-order belum memenuhi persyaratan. Pesanan tidak dapat dilanjutkan.',
-                        style: TextStyle(color: Colors.red),
+                        style: TextStyle(color: AppColors.error),
                       ),
                     );
                   }
@@ -401,6 +409,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Widget _buildFulfillmentMethodCard() {
     return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: RadioGroup<String>(
@@ -413,7 +427,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             children: [
               const Text(
                 'Metode Pemenuhan Pesanan',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: AppTextStyles.headingSmall,
               ),
               const SizedBox(height: 8),
               const RadioListTile<String>(
@@ -439,6 +453,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Widget _buildPaymentSelectionCard() {
     return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -446,13 +466,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
           children: [
             const Text(
               'Pembayaran',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: AppTextStyles.headingSmall,
             ),
             const SizedBox(height: 8),
             const Text(
               'Pembayaran digital diproses melalui Midtrans. Nominal final '
               'ditentukan dan divalidasi oleh Laravel.',
-              style: TextStyle(color: Colors.black54),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
             RadioGroup<String>(
               groupValue: _paymentType,
@@ -505,7 +525,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             const Text(
               'DP dapat dipilih untuk pesanan reguler maupun pre-order. '
               'Jika tidak memenuhi ketentuan, Laravel akan meminta pembayaran penuh.',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
             if (_fulfillmentMethod == _pickup)
               const Padding(
@@ -513,7 +533,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 child: Text(
                   'Pembayaran tunai di outlet belum tersedia melalui endpoint aplikasi saat ini. '
                   'Untuk checkout tahap ini, gunakan Midtrans.',
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ),
           ],
@@ -525,6 +545,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget _buildDeliveryAddressCard() {
     final address = _selectedAddress;
     return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -535,7 +561,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 const Expanded(
                   child: Text(
                     'Alamat Pengiriman',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: AppTextStyles.headingSmall,
                   ),
                 ),
                 TextButton(
@@ -562,6 +588,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Widget _buildOutletSelectionCard() {
     return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: FutureBuilder<List<Outlet>>(
@@ -623,7 +655,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 children: [
                   const Text(
                     'Pilih Outlet Pengambilan',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: AppTextStyles.headingSmall,
                   ),
                   const SizedBox(height: 8),
                   ...outlets.map(
@@ -666,6 +698,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final subtotal = items.fold<int>(0, (total, item) => total + item.subtotal);
 
     return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -673,7 +711,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           children: [
             const Text(
               'Ringkasan Pesanan',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: AppTextStyles.headingSmall,
             ),
             const SizedBox(height: 12),
             ...items.map(
@@ -712,7 +750,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             const SizedBox(height: 6),
             const Text(
               'Nominal final dihitung ulang oleh Laravel saat pesanan dibuat.',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -722,6 +760,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Widget _buildNoteField() {
     return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: TextField(
@@ -740,13 +784,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildShippingInformation() {
-    return const Card(
-      child: Padding(
+    return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      child: const Padding(
         padding: EdgeInsets.all(16),
         child: Text(
           'Biaya pengiriman dibayarkan penerima kepada kurir saat pesanan diterima. '
           'Biaya pengiriman tidak termasuk subtotal produk TWFOOD.',
-          style: TextStyle(color: Colors.black54),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
       ),
     );

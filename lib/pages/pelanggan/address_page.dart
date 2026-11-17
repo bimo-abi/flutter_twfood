@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/address.dart';
 import '../../services/address_service.dart';
+import '../../theme/app_colors.dart';
 import 'add_address_page.dart';
 import 'edit_address_page.dart';
 
@@ -127,7 +128,9 @@ class _AddressPageState extends State<AddressPage> {
           ),
         ],
       ),
-      body: FutureBuilder<List<Address>>(
+      body: Container(
+        color: AppColors.background,
+        child: FutureBuilder<List<Address>>(
         future: _addressesFuture,
         builder: (context, snapshot) {
           // LOADING
@@ -219,6 +222,7 @@ class _AddressPageState extends State<AddressPage> {
             ),
           );
         },
+        ),
       ),
     );
   }
@@ -227,6 +231,12 @@ class _AddressPageState extends State<AddressPage> {
   Widget _buildAddressCard(Address address) {
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
+      elevation: 0,
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -236,7 +246,7 @@ class _AddressPageState extends State<AddressPage> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.location_on_outlined),
+                const Icon(Icons.location_on_outlined, color: AppColors.primary),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -244,6 +254,7 @@ class _AddressPageState extends State<AddressPage> {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -255,7 +266,7 @@ class _AddressPageState extends State<AddressPage> {
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      color: Colors.grey.shade200,
+                      color: AppColors.secondary.withValues(alpha: 0.10),
                     ),
                     child: const Text(
                       'Utama',
@@ -281,7 +292,7 @@ class _AddressPageState extends State<AddressPage> {
             //nomor telepon
             Text(
               address.nomorTelepon,
-              style: const TextStyle(color: Colors.grey),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
 
             const SizedBox(height: 12),
@@ -289,7 +300,7 @@ class _AddressPageState extends State<AddressPage> {
             //alamat lengkap
             Text(
               address.alamatLengkap,
-              style: const TextStyle(fontSize: 15, height: 1.5),
+              style: const TextStyle(fontSize: 15, height: 1.5, color: AppColors.textPrimary),
             ),
 
             const SizedBox(height: 8),
@@ -299,7 +310,7 @@ class _AddressPageState extends State<AddressPage> {
               '${address.kota}, '
               '${address.provinsi} '
               '${address.kodePos}',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
 
             // Koordinat
@@ -307,13 +318,13 @@ class _AddressPageState extends State<AddressPage> {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  const Icon(Icons.map_outlined, size: 18),
+                  const Icon(Icons.map_outlined, size: 18, color: AppColors.secondary),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       '${address.latitude}, '
                       '${address.longitude}',
-                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                     ),
                   ),
                 ],

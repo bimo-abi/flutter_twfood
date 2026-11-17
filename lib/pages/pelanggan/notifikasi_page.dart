@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_colors.dart';
+
 import '../../models/notifikasi.dart';
 import '../../services/notifikasi_service.dart';
 import 'order_detail_page.dart';
@@ -196,7 +198,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
                     '$unreadCount notifikasi belum dibaca',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -215,6 +217,8 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: unread
           ? Theme.of(context).colorScheme.primaryContainer.withAlpha(90)
           : null,
@@ -269,7 +273,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
                     Text(
                       _formatDate(item.createdAt),
                       style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: Colors.grey),
+                          ?.copyWith(color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -281,7 +285,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
                           size: 14,
                           color: unread
                               ? Theme.of(context).colorScheme.primary
-                              : Colors.green,
+                              : AppColors.secondary,
                         ),
                         const SizedBox(width: 5),
                         Text(
@@ -291,7 +295,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
                             fontWeight: FontWeight.w600,
                             color: unread
                                 ? Theme.of(context).colorScheme.primary
-                                : Colors.green,
+                                : AppColors.secondary,
                           ),
                         ),
                       ],
@@ -325,12 +329,12 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         children: const [
           SizedBox(height: 150),
-          Icon(Icons.notifications_none_outlined, size: 64, color: Colors.grey),
+          Icon(Icons.notifications_none_outlined, size: 64, color: AppColors.textSecondary),
           SizedBox(height: 16),
           Center(
             child: Text(
               'Belum ada notifikasi.',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
         ],
@@ -345,7 +349,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
             const Text(
               'Gagal mengambil notifikasi.',
@@ -355,7 +359,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
             SelectableText(
               error?.toString() ?? 'Penyebab error tidak tersedia.',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/user.dart';
 import '../../services/auth_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 
 class EditProfilePage extends StatefulWidget {
   final User user;
@@ -90,18 +92,36 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Edit Profil')),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Informasi Pribadi', style: AppTextStyles.headingSmall),
+                  const SizedBox(height: 6),
+                  Text('Pastikan data kontak kamu selalu aktif agar mudah dihubungi.', style: AppTextStyles.bodySmall),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
             TextFormField(
               controller: _namaController,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Nama lengkap',
-                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_outline),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
@@ -118,7 +138,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Email',
-                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email_outlined),
               ),
               validator: (value) {
                 final email = value?.trim() ?? '';
@@ -137,7 +157,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               textInputAction: TextInputAction.done,
               decoration: const InputDecoration(
                 labelText: 'Nomor telepon',
-                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.phone_outlined),
               ),
               validator: (value) {
                 final phone = value?.trim() ?? '';

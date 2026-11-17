@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/address.dart';
 import '../../models/region_selection.dart';
 import '../../services/address_service.dart';
+import '../../theme/app_colors.dart';
 import 'location_picker_page.dart';
 import '../../widgets/administrative_region_fields.dart';
 
@@ -148,7 +149,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
             padding: EdgeInsets.only(top: 4),
             child: Text(
               'GPS dapat digunakan sebagai titik awal, lalu geser peta untuk menyesuaikan lokasi rumah.',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ),
       ],
@@ -166,11 +167,34 @@ class _EditAddressPageState extends State<EditAddressPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Alamat')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
+      body: Container(
+        color: AppColors.background,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
           children: [
+            Card(
+              elevation: 0,
+              color: AppColors.secondary.withValues(alpha: 0.08),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.location_on_outlined, color: AppColors.secondary, size: 26),
+                    SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Lengkapi alamat pengiriman', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                      SizedBox(height: 4),
+                      Text('Pastikan nama penerima, nomor telepon, dan titik lokasi sudah benar.', style: TextStyle(color: AppColors.textSecondary, height: 1.4)),
+                    ])),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _labelController,
               decoration: const InputDecoration(
@@ -262,6 +286,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_colors.dart';
+
 import '../../models/recipe.dart';
 import '../../services/recipe_service.dart';
 import 'recipe_detail_page.dart';
@@ -118,6 +120,9 @@ class _RecipePageState extends State<RecipePage> {
   Widget _buildRecipeCard(Recipe recipe) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
+      color: AppColors.surface,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -129,7 +134,7 @@ class _RecipePageState extends State<RecipePage> {
 
             Text(
               recipe.judul,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             ),
 
             if (recipe.deskripsi != null && recipe.deskripsi!.isNotEmpty) ...[
@@ -140,7 +145,7 @@ class _RecipePageState extends State<RecipePage> {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.grey,
+                  color: AppColors.textSecondary,
                   height: 1.4,
                 ),
               ),
@@ -204,7 +209,7 @@ class _RecipePageState extends State<RecipePage> {
       height: 180,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.grey.shade200,
+        color: AppColors.border,
       ),
       child: recipe.foto != null && recipe.foto!.isNotEmpty
           ? ClipRRect(

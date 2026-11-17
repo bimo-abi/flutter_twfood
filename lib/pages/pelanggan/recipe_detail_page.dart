@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_colors.dart';
+
 import '../../models/recipe.dart';
 import '../../services/recipe_service.dart';
 
@@ -125,7 +127,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                 if (recipe.produk.isEmpty)
                   const Text(
                     'Belum ada produk yang tercatat.',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: AppColors.textSecondary),
                   )
                 else
                   ...recipe.produk.map((recipeProduct) {
@@ -177,7 +179,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
       height: 240,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.grey.shade200,
+        color: AppColors.border,
       ),
       child: recipe.foto != null && recipe.foto!.isNotEmpty
           ? ClipRRect(
@@ -220,13 +222,13 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
     );
   }
 
   Widget _buildTextContent(String? content, String emptyMessage) {
     if (content == null || content.isEmpty) {
-      return Text(emptyMessage, style: const TextStyle(color: Colors.grey));
+      return Text(emptyMessage, style: const TextStyle(color: AppColors.textSecondary));
     }
 
     return Text(content, style: const TextStyle(fontSize: 15, height: 1.6));

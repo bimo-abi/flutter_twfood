@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/outlet.dart';
 import '../../services/outlet_service.dart';
+import '../../theme/app_colors.dart';
 
 class OutletPage extends StatefulWidget {
   const OutletPage({super.key});
@@ -56,7 +57,9 @@ class _OutletPageState extends State<OutletPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Outlet TWFOOD')),
-      body: FutureBuilder<List<Outlet>>(
+      body: Container(
+        color: AppColors.background,
+        child: FutureBuilder<List<Outlet>>(
         future: _outletsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -123,6 +126,7 @@ class _OutletPageState extends State<OutletPage> {
             ),
           );
         },
+        ),
       ),
     );
   }
@@ -130,6 +134,12 @@ class _OutletPageState extends State<OutletPage> {
   Widget _buildOutletCard(Outlet outlet) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0,
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -141,7 +151,7 @@ class _OutletPageState extends State<OutletPage> {
 
             Text(
               outlet.namaOutlet,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             ),
 
             const SizedBox(height: 16),
@@ -194,7 +204,7 @@ class _OutletPageState extends State<OutletPage> {
               const SizedBox(height: 8),
               Text(
                 outlet.deskripsi!,
-                style: const TextStyle(fontSize: 15, height: 1.5),
+                style: const TextStyle(fontSize: 15, height: 1.5, color: AppColors.textPrimary),
               ),
             ],
 
@@ -226,7 +236,7 @@ class _OutletPageState extends State<OutletPage> {
       height: 200,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.grey.shade200,
+        color: AppColors.secondary.withValues(alpha: 0.08),
       ),
       child: outlet.foto != null && outlet.foto!.isNotEmpty
           ? ClipRRect(
@@ -256,7 +266,7 @@ class _OutletPageState extends State<OutletPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               const SizedBox(height: 4),
               Text(value),
             ],

@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../../theme/app_colors.dart';
+
 import '../../models/retur.dart';
 import '../../services/retur_service.dart';
 
@@ -155,8 +157,8 @@ class _DetailReturPageState extends State<DetailReturPage> {
     );
   }
 
-  Widget _section(String title, List<Widget> children) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)), const SizedBox(height: 12), ...children])));
-  Widget _line(String label, String value) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: Text(label, style: const TextStyle(color: Colors.grey))), const SizedBox(width: 12), Expanded(child: Text(value, textAlign: TextAlign.end))]));
+  Widget _section(String title, List<Widget> children) => Card(color: AppColors.surface, elevation: 1, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)), const SizedBox(height: 12), ...children])));
+  Widget _line(String label, String value) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: Text(label, style: const TextStyle(color: AppColors.textSecondary))), const SizedBox(width: 12), Expanded(child: Text(value, textAlign: TextAlign.end))]));
 }
 
 String _status(String value) => value.replaceAll('_', ' ');

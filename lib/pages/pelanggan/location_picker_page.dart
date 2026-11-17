@@ -119,52 +119,76 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Tentukan Lokasi Alamat')),
+      appBar: AppBar(
+        title: const Text('Tentukan Lokasi Alamat'),
+        actions: [
+          IconButton(
+            tooltip: 'Gunakan GPS saya',
+            onPressed: _isGettingLocation ? null : _useCurrentLocation,
+            icon: const Icon(Icons.my_location_outlined),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            color: theme.colorScheme.surface,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Geser peta hingga pin berada tepat di lokasi rumah atau titik penerimaan pesanan.',
-                  style: TextStyle(fontSize: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, color: theme.colorScheme.secondary, size: 20),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        'Geser peta sampai pin tepat berada di lokasi rumah atau titik penerimaan pesanan.',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _isGettingLocation ? null : _useCurrentLocation,
-                  icon: _isGettingLocation
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.my_location),
-                  label: Text(
-                    _isGettingLocation
-                        ? 'Mencari lokasi...'
-                        : 'Gunakan Lokasi GPS Saya',
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _isGettingLocation ? null : _useCurrentLocation,
+                    icon: _isGettingLocation
+                        ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.gps_fixed),
+                    label: Text(_isGettingLocation ? 'Mencari lokasi...' : 'Gunakan Lokasi GPS Saya'),
                   ),
                 ),
                 if (_locationMessage != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    _locationMessage!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 12,
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_locationMessage!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onErrorContainer)),
+                        if (_locationMessage!.contains('permanen'))
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton(
+                              onPressed: Geolocator.openAppSettings,
+                              child: const Text('Buka Pengaturan Aplikasi'),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  if (_locationMessage!.contains('permanen'))
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton(
-                        onPressed: Geolocator.openAppSettings,
-                        child: const Text('Buka Pengaturan Aplikasi'),
-                      ),
-                    ),
                 ],
               ],
             ),
@@ -184,15 +208,12 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'tw_food',
                       maxZoom: 19,
                     ),
                     const RichAttributionWidget(
-                      attributions: [
-                        TextSourceAttribution('© OpenStreetMap contributors'),
-                      ],
+                      attributions: [TextSourceAttribution('© OpenStreetMap contributors')],
                     ),
                   ],
                 ),
@@ -202,20 +223,16 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                     child: Icon(
                       Icons.location_pin,
                       size: 48,
-                      color: Theme.of(context).colorScheme.error,
+                      color: theme.colorScheme.primary,
                       shadows: const [
-                        Shadow(
-                          color: Colors.black38,
-                          blurRadius: 5,
-                          offset: Offset(0, 2),
-                        ),
+                        Shadow(color: Colors.black38, blurRadius: 5, offset: Offset(0, 2)),
                       ],
                     ),
                   ),
                 ),
                 Positioned(
-                  right: 16,
-                  bottom: 16,
+                  right: 14,
+                  bottom: 14,
                   child: FloatingActionButton.small(
                     heroTag: 'map_recenter_gps',
                     tooltip: 'Gunakan GPS',
@@ -223,28 +240,61 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                     child: const Icon(Icons.my_location),
                   ),
                 ),
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.open_with, size: 16, color: theme.colorScheme.secondary),
+                        const SizedBox(width: 6),
+                        Text('Geser peta untuk memilih titik', style: theme.textTheme.labelMedium),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
           SafeArea(
             top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 13, 16, 16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(top: BorderSide(color: theme.dividerColor)),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_outlined, color: theme.colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text('Koordinat lokasi', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
                   Text(
                     _hasSelectedLocation
-                        ? 'Latitude: ${_selectedPoint.latitude.toStringAsFixed(6)}\nLongitude: ${_selectedPoint.longitude.toStringAsFixed(6)}'
-                        : 'Tentukan lokasi menggunakan GPS atau geser peta terlebih dahulu.',
-                    style: const TextStyle(fontSize: 13),
+                        ? 'Lat ${_selectedPoint.latitude.toStringAsFixed(6)}  •  Long ${_selectedPoint.longitude.toStringAsFixed(6)}'
+                        : 'Gunakan GPS atau geser peta untuk menentukan titik lokasi.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   SizedBox(
-                    height: 48,
-                    child: ElevatedButton.icon(
+                    height: 49,
+                    child: FilledButton.icon(
                       onPressed: _hasSelectedLocation ? _confirmLocation : null,
-                      icon: const Icon(Icons.check),
+                      icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Gunakan Titik Lokasi Ini'),
                     ),
                   ),

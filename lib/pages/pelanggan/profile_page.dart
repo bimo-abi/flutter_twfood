@@ -9,6 +9,8 @@ import '../auth/login_page.dart';
 import 'address_page.dart';
 import 'edit_profile_page.dart';
 import '../../services/cart_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -145,6 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Profil Saya')),
       body: FutureBuilder<User>(
         future: _userFuture,
@@ -195,12 +198,22 @@ class _ProfilePageState extends State<ProfilePage> {
           return RefreshIndicator(
             onRefresh: _refreshProfile,
             child: ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
               children: [
-                const CircleAvatar(
-                  radius: 45,
-                  child: Icon(Icons.person_outline, size: 50),
-                ),
+                Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 42,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.10),
+                        child: const Icon(Icons.person_outline, size: 46, color: AppColors.primary),
+                      ),
 
                 const SizedBox(height: 20),
 
@@ -208,10 +221,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Text(
                     user.nama,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTextStyles.headingMedium,
                   ),
                 ),
 
@@ -221,11 +231,20 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Text(
                     user.email,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.grey),
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
                   ),
                 ),
 
-                const SizedBox(height: 28),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: Text('Informasi Akun', style: AppTextStyles.headingSmall),
+                ),
 
                 _buildProfileField(
                   icon: Icons.check_circle_outline,
@@ -270,8 +289,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 8),
 
                 Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: AppColors.border)),
                   child: ListTile(
-                    leading: const Icon(Icons.edit_outlined),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    leading: const Icon(Icons.edit_outlined, color: AppColors.primary),
                     title: const Text(
                       'Edit Profil',
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -293,8 +316,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
 
                 Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: AppColors.border)),
                   child: ListTile(
-                    leading: const Icon(Icons.location_on_outlined),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    leading: const Icon(Icons.location_on_outlined, color: AppColors.secondary),
                     title: const Text(
                       'Alamat Saya',
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -344,16 +371,20 @@ class _ProfilePageState extends State<ProfilePage> {
     required String value,
   }) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: AppColors.border)),
       child: ListTile(
-        leading: Icon(icon),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+        leading: Icon(icon, color: AppColors.secondary),
         title: Text(
           label,
-          style: const TextStyle(fontSize: 13, color: Colors.grey),
+          style: AppTextStyles.bodySmall,
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Text(value, style: const TextStyle(fontSize: 16)),
+          child: Text(value, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
         ),
       ),
     );
