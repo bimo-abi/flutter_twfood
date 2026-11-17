@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/token_storage.dart';
 import '../auth/login_page.dart';
 import 'address_page.dart';
+import 'edit_profile_page.dart';
 import '../../services/cart_service.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -266,13 +267,30 @@ class _ProfilePageState extends State<ProfilePage> {
                   value: user.jenisPelanggan,
                 ),
 
-                _buildProfileField(
-                  icon: Icons.check_circle_outline,
-                  label: 'Status Akun',
-                  value: user.statusAktif == true ? 'Aktif' : 'Tidak Aktif',
-                ),
-
                 const SizedBox(height: 8),
+
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.edit_outlined),
+                    title: const Text(
+                      'Edit Profil',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text('Ubah nama, email, dan nomor telepon'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      final updated = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditProfilePage(user: user),
+                        ),
+                      );
+                      if (updated == true && mounted) {
+                        await _refreshProfile();
+                      }
+                    },
+                  ),
+                ),
 
                 Card(
                   child: ListTile(
@@ -283,13 +301,16 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     subtitle: const Text('Kelola alamat pengiriman Anda'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const AddressPage(),
                         ),
                       );
+                      if (mounted) {
+                        await _refreshProfile();
+                      }
                     },
                   ),
                 ),

@@ -245,7 +245,11 @@ class _CartPageState extends State<CartPage> {
     await Navigator.push<void>(
       context,
       MaterialPageRoute(
-        builder: (_) => CheckoutPage(initialAddress: _selectedDeliveryAddress),
+        builder: (_) => CheckoutPage(
+          initialAddress: _selectedDeliveryAddress,
+          initialOrderType: 'reguler',
+          clearCartOnSuccess: true,
+        ),
       ),
     );
   }

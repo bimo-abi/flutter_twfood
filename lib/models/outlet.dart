@@ -3,6 +3,7 @@ class Outlet {
   final String namaOutlet;
   final String? alamat;
   final String? nomorTelepon;
+  final String? linkGoogleMaps;
   final double? latitude;
   final double? longitude;
   final String? deskripsi;
@@ -14,6 +15,7 @@ class Outlet {
     required this.namaOutlet,
     this.alamat,
     this.nomorTelepon,
+    this.linkGoogleMaps,
     this.latitude,
     this.longitude,
     this.deskripsi,
@@ -39,6 +41,7 @@ class Outlet {
       namaOutlet: json['nama_outlet']?.toString() ?? '',
       alamat: json['alamat']?.toString(),
       nomorTelepon: json['nomor_telepon']?.toString(),
+      linkGoogleMaps: json['link_google_maps']?.toString(),
       latitude: _parseNullableDouble(json['latitude']),
       longitude: _parseNullableDouble(json['longitude']),
       deskripsi: json['deskripsi']?.toString(),

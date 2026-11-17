@@ -15,6 +15,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   final List<CustomerOrder> _orders = [];
   bool _loading = true;
   bool _loadingMore = false;
+  bool _refreshing = false;
   String? _error;
   int _currentPage = 1;
   int _lastPage = 1;
@@ -27,24 +28,39 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   }
 
   Future<void> _load({bool refresh = false}) async {
-    if (_loadingMore) return;
+    if (_loadingMore || _refreshing || (_loading && !refresh)) return;
+
+    final showInitialLoader = refresh && _orders.isEmpty;
     if (refresh) {
       setState(() {
-        _loading = true;
+        _refreshing = true;
+        if (showInitialLoader) _loading = true;
         _error = null;
       });
     } else {
       if (_currentPage >= _lastPage) return;
       setState(() => _loadingMore = true);
     }
+
     try {
       final result = await CustomerOrderService.getHistory(
         page: refresh ? 1 : _currentPage + 1,
       );
       if (!mounted) return;
+
       setState(() {
-        if (refresh) _orders.clear();
-        _orders.addAll(result.orders);
+        if (refresh) {
+          _orders
+            ..clear()
+            ..addAll(result.orders);
+        } else {
+          // Hindari kartu ganda jika API mengembalikan item yang sama
+          // pada batas dua halaman saat ada pesanan baru.
+          final existingIds = _orders.map((order) => order.idPesanan).toSet();
+          _orders.addAll(
+            result.orders.where((order) => !existingIds.contains(order.idPesanan)),
+          );
+        }
         _currentPage = result.currentPage;
         _lastPage = result.lastPage;
         _total = result.total;
@@ -58,6 +74,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         setState(() {
           _loading = false;
           _loadingMore = false;
+          _refreshing = false;
         });
       }
     }
@@ -88,17 +105,27 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               child: ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                itemCount: _orders.length + 1,
+                itemCount: _orders.length + 1 + (_error != null ? 1 : 0),
                 itemBuilder: (context, index) {
-                  if (index == _orders.length) return _footer();
+                  if (_error != null && index == 0) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'Pembaruan gagal: $_error',
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      ),
+                    );
+                  }
+                  final orderIndex = index - (_error != null ? 1 : 0);
+                  if (orderIndex == _orders.length) return _footer();
                   return _OrderCard(
-                    order: _orders[index],
+                    order: _orders[orderIndex],
                     onTap: () async {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => OrderDetailPage(
-                            idPesanan: _orders[index].idPesanan,
+                            idPesanan: _orders[orderIndex].idPesanan,
                           ),
                         ),
                       );
@@ -266,12 +293,17 @@ String _statusLabel(String value) {
     'sedang_diproses': 'Sedang diproses',
     'diproses': 'Diproses',
     'siap_diambil': 'Siap diambil',
+    'siap_dikirim': 'Siap dikirim',
+    'dalam_pengiriman': 'Dalam pengiriman',
     'dikirim': 'Dikirim',
+    'diterima': 'Diterima',
     'selesai': 'Selesai',
     'dibatalkan': 'Dibatalkan',
     'lunas': 'Lunas',
     'belum_dibayar': 'Belum dibayar',
     'sebagian': 'Dibayar sebagian',
+    'dp_dibayar': 'DP dibayar',
+    'sebagian_dibayar': 'Dibayar sebagian',
     'dikembalikan': 'Dikembalikan',
     'kadaluarsa': 'Kedaluwarsa',
     'gagal': 'Gagal',

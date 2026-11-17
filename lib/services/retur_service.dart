@@ -23,9 +23,15 @@ class ReturnService {
 
   static const _allowedExtensions = {'jpg', 'jpeg', 'png', 'webp', 'mp4', 'mov', 'avi'};
 
-  static Future<ReturnRequestPage> getHistory({int page = 1}) async {
+  static Future<ReturnRequestPage> getHistory({
+    int page = 1,
+    int perPage = 10,
+  }) async {
     if (page < 1) throw ArgumentError.value(page, 'page');
-    final response = await _get('/retur?page=$page');
+    if (perPage < 1 || perPage > 50) {
+      throw ArgumentError.value(perPage, 'perPage');
+    }
+    final response = await _get('/retur?page=$page&per_page=$perPage');
     final decoded = _decode(response.body);
     if (response.statusCode != 200) _throwApi(decoded, response.statusCode);
 
@@ -39,6 +45,86 @@ class ReturnService {
       currentPage: _toInt(data['current_page'], page),
       lastPage: _toInt(data['last_page'], 1),
       total: _toInt(data['total'], rows.length),
+    );
+  }
+
+
+  /// Menghitung kuota retur berdasarkan riwayat yang dikirim Laravel.
+  /// Laravel tetap menjadi validasi final saat pengajuan disimpan.
+  static Future<ReturnEligibilitySummary> getEligibilityForOrder(
+    int idPesanan,
+  ) async {
+    if (idPesanan <= 0) throw ArgumentError.value(idPesanan, 'idPesanan');
+
+    const activeStatuses = {
+      'diajukan',
+      'diproses',
+      'menunggu_persetujuan',
+      'disetujui',
+      'menunggu_pengembalian_barang',
+      'barang_diterima',
+      'sedang_diperiksa',
+    };
+    const pendingStatuses = {
+      'diajukan',
+      'diproses',
+      'menunggu_persetujuan',
+    };
+    const approvedStatuses = {
+      'disetujui',
+      'menunggu_pengembalian_barang',
+      'barang_diterima',
+      'sedang_diperiksa',
+      'selesai',
+    };
+
+    final usedQuantities = <int, int>{};
+    var hasActiveRequest = false;
+    String? activeReturnNumber;
+    String? activeReturnStatus;
+
+    var page = 1;
+    var lastPage = 1;
+    do {
+      final result = await getHistory(page: page, perPage: 50);
+      lastPage = result.lastPage;
+
+      for (final request in result.returns) {
+        if (request.idPesanan != idPesanan) continue;
+
+        final status = request.statusRetur;
+        if (activeStatuses.contains(status)) {
+          hasActiveRequest = true;
+          activeReturnNumber ??= request.nomorRetur;
+          activeReturnStatus ??= status;
+        }
+
+        if (!pendingStatuses.contains(status) &&
+            !approvedStatuses.contains(status)) {
+          continue;
+        }
+
+        for (final item in request.items) {
+          final quantity = pendingStatuses.contains(status)
+              ? item.jumlahDiminta
+              : (item.jumlahDisetujui ?? item.jumlahDiminta);
+          if (quantity <= 0) continue;
+          usedQuantities.update(
+            item.idDetailPesanan,
+            (current) => current + quantity,
+            ifAbsent: () => quantity,
+          );
+        }
+      }
+
+      page++;
+    } while (page <= lastPage);
+
+    return ReturnEligibilitySummary(
+      hasActiveRequest: hasActiveRequest,
+      usedQuantities: usedQuantities,
+      activeReturnNumber: activeReturnNumber,
+      activeReturnStatus: activeReturnStatus,
     );
   }
 
@@ -159,5 +245,25 @@ class ReturnService {
     final message = decoded?['message']?.toString() ??
         (status == 401 ? 'Sesi login berakhir. Silakan login kembali.' : 'Permintaan retur gagal (HTTP $status).');
     throw ReturnServiceException(message, statusCode: status);
+  }
+}
+
+
+class ReturnEligibilitySummary {
+  final bool hasActiveRequest;
+  final Map<int, int> usedQuantities;
+  final String? activeReturnNumber;
+  final String? activeReturnStatus;
+
+  const ReturnEligibilitySummary({
+    required this.hasActiveRequest,
+    required this.usedQuantities,
+    required this.activeReturnNumber,
+    required this.activeReturnStatus,
+  });
+
+  int remainingFor(OrderItem item) {
+    final remaining = item.jumlah - (usedQuantities[item.idDetailPesanan] ?? 0);
+    return remaining > 0 ? remaining : 0;
   }
 }

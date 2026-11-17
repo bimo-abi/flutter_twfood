@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/address.dart';
 import '../../models/cart_item.dart';
@@ -15,8 +16,17 @@ import 'order_success_page.dart';
 
 class CheckoutPage extends StatefulWidget {
   final Address? initialAddress;
+  final List<CartItem>? initialItems;
+  final String initialOrderType;
+  final bool clearCartOnSuccess;
 
-  const CheckoutPage({super.key, this.initialAddress});
+  const CheckoutPage({
+    super.key,
+    this.initialAddress,
+    this.initialItems,
+    this.initialOrderType = 'reguler',
+    this.clearCartOnSuccess = false,
+  });
 
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
@@ -25,13 +35,14 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   static const String _delivery = 'delivery';
   static const String _pickup = 'pickup';
-  static const String _regular = 'reguler';
   static const String _preOrder = 'pre_order';
 
   final TextEditingController _noteController = TextEditingController();
 
   String _fulfillmentMethod = _delivery;
-  String _orderType = _regular;
+  late String _orderType;
+  List<CartItem> get _checkoutItems =>
+      widget.initialItems ?? CartService.items;
   Address? _selectedAddress;
   Outlet? _selectedOutlet;
   late Future<List<Outlet>> _outletsFuture;
@@ -44,6 +55,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void initState() {
     super.initState();
     _selectedAddress = widget.initialAddress;
+    _orderType = widget.initialOrderType;
     _outletsFuture = OutletService.getOutlets();
     _preOrderEligibilityFuture = _checkPreOrderEligibility();
     _dpEligibilityFuture = _checkDpEligibility();
@@ -75,7 +87,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         return false;
       }
 
-      final items = CartService.items;
+      final items = _checkoutItems;
       if (items.isEmpty) return false;
 
       return items.every(
@@ -137,13 +149,36 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
+  Future<void> _openOutletGoogleMaps(String link) async {
+    final uri = Uri.tryParse(link);
+
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Link Google Maps tidak valid.')),
+      );
+      return;
+    }
+
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat membuka Google Maps.')),
+      );
+    }
+  }
+
   Future<void> _refreshOutlets() async {
     setState(() => _outletsFuture = OutletService.getOutlets());
     await _outletsFuture;
   }
 
   bool get _canSubmit {
-    if (_isSubmitting || CartService.items.isEmpty) return false;
+    if (_isSubmitting || _checkoutItems.isEmpty) return false;
     if (_fulfillmentMethod == _delivery) return _selectedAddress != null;
     return _selectedOutlet != null;
   }
@@ -151,7 +186,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Future<void> _submitOrder() async {
     if (!_canSubmit || _isSubmitting) return;
 
-    final items = CartService.items;
+    final items = _checkoutItems;
+    if (_orderType == _preOrder && !await _preOrderEligibilityFuture) {
+      _showMessage(
+        'Pre-order hanya tersedia untuk akun Toko/Horeca terverifikasi dan varian dengan periode pre-order aktif.',
+      );
+      return;
+    }
     if (items.length > 50) {
       _showMessage('Maksimal 50 baris item dalam satu pesanan.');
       return;
@@ -185,7 +226,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
       // Pesanan sudah tercatat. Kosongkan keranjang sebelum membuat transaksi
       // pembayaran agar kegagalan gateway tidak menyebabkan pesanan dibuat ulang.
-      CartService.clear();
+      if (widget.clearCartOnSuccess) CartService.clear();
 
       if (!mounted) return;
 
@@ -247,7 +288,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   @override
   Widget build(BuildContext context) {
-    final items = CartService.items;
+    final items = _checkoutItems;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
@@ -296,6 +337,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildOrderTypeCard() {
+    final isPreOrder = _orderType == _preOrder;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -307,47 +349,50 @@ class _CheckoutPageState extends State<CheckoutPage> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            RadioGroup<String>(
-              groupValue: _orderType,
-              onChanged: (value) {
-                if (value != null) setState(() => _orderType = value);
-              },
-              child: const RadioListTile<String>(
-                contentPadding: EdgeInsets.zero,
-                value: _regular,
-                title: Text('Reguler'),
-                subtitle: Text('Mengikuti ketersediaan stok reguler.'),
+            Row(
+              children: [
+                Icon(
+                  isPreOrder
+                      ? Icons.event_available
+                      : Icons.inventory_2_outlined,
+                  color: isPreOrder ? Colors.blue : Colors.green,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isPreOrder ? 'Pre-order' : 'Reguler',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isPreOrder
+                  ? 'Pesanan ini masuk ke pencatatan kebutuhan produksi dan tidak mengurangi stok reguler.'
+                  : 'Pesanan ini menggunakan stok reguler yang tersedia saat checkout.',
+              style: const TextStyle(color: Colors.black54),
+            ),
+            if (isPreOrder)
+              FutureBuilder<bool>(
+                future: _preOrderEligibilityFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.only(top: 10),
+                      child: LinearProgressIndicator(),
+                    );
+                  }
+                  if (snapshot.data != true) {
+                    return const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Akun atau periode pre-order belum memenuhi persyaratan. Pesanan tidak dapat dilanjutkan.',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
-            ),
-            FutureBuilder<bool>(
-              future: _preOrderEligibilityFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: LinearProgressIndicator(),
-                  );
-                }
-
-                if (snapshot.data != true) return const SizedBox.shrink();
-
-                return RadioGroup<String>(
-                  groupValue: _orderType,
-                  onChanged: (value) {
-                    if (value != null) setState(() => _orderType = value);
-                  },
-                  child: const RadioListTile<String>(
-                    contentPadding: EdgeInsets.zero,
-                    value: _preOrder,
-                    title: Text('Pre-order'),
-                    subtitle: Text(
-                      'Tersedia untuk akun Toko/Horeca terverifikasi '
-                      'dan seluruh varian dalam keranjang memenuhi periode pre-order.',
-                    ),
-                  ),
-                );
-              },
-            ),
           ],
         ),
       ),
@@ -582,13 +627,30 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ),
                   const SizedBox(height: 8),
                   ...outlets.map(
-                    (outlet) => RadioListTile<int>(
-                      contentPadding: EdgeInsets.zero,
-                      value: outlet.idOutlet,
-                      title: Text(outlet.namaOutlet),
-                      subtitle: outlet.alamat == null
-                          ? null
-                          : Text(outlet.alamat!),
+                    (outlet) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RadioListTile<int>(
+                          contentPadding: EdgeInsets.zero,
+                          value: outlet.idOutlet,
+                          title: Text(outlet.namaOutlet),
+                          subtitle: outlet.alamat == null
+                              ? null
+                              : Text(outlet.alamat!),
+                        ),
+                        if (outlet.linkGoogleMaps != null &&
+                            outlet.linkGoogleMaps!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 56, bottom: 8),
+                            child: TextButton.icon(
+                              onPressed: () => _openOutletGoogleMaps(
+                                outlet.linkGoogleMaps!,
+                              ),
+                              icon: const Icon(Icons.directions_outlined),
+                              label: const Text('Lihat lokasi di Google Maps'),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],

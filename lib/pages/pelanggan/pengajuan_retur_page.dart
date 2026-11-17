@@ -7,7 +7,12 @@ import 'riwayat_retur_page.dart';
 
 class PengajuanReturPage extends StatefulWidget {
   final CustomerOrder order;
-  const PengajuanReturPage({super.key, required this.order});
+  final Map<int, int> maxQuantities;
+  const PengajuanReturPage({
+    super.key,
+    required this.order,
+    required this.maxQuantities,
+  });
 
   @override
   State<PengajuanReturPage> createState() => _PengajuanReturPageState();
@@ -119,6 +124,7 @@ class _PengajuanReturPageState extends State<PengajuanReturPage> {
             const SizedBox(height: 8),
             ...widget.order.items.map((item) {
               final selected = _quantities[item.idDetailPesanan] ?? 0;
+              final maxQuantity = widget.maxQuantities[item.idDetailPesanan] ?? item.jumlah;
               return Card(
                 margin: const EdgeInsets.only(bottom: 10),
                 child: Padding(
@@ -128,6 +134,13 @@ class _PengajuanReturPageState extends State<PengajuanReturPage> {
                     children: [
                       Text(item.namaProduk, style: const TextStyle(fontWeight: FontWeight.w600)),
                       Text('${item.namaVarian} • Dibeli ${item.jumlah}'),
+                      Text(
+                        'Sisa yang dapat diajukan: $maxQuantity',
+                        style: TextStyle(
+                          color: maxQuantity > 0 ? Colors.green : Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -135,10 +148,23 @@ class _PengajuanReturPageState extends State<PengajuanReturPage> {
                           SizedBox(
                             width: 130,
                             child: DropdownButtonFormField<int>(
-                              initialValue: selected,
-                              decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
-                              items: List.generate(item.jumlah + 1, (i) => DropdownMenuItem(value: i, child: Text(i == 0 ? 'Tidak dipilih' : '$i'))),
-                              onChanged: (value) => setState(() => _quantities[item.idDetailPesanan] = value ?? 0),
+                              initialValue: selected <= maxQuantity ? selected : 0,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                              ),
+                              items: List.generate(
+                                maxQuantity + 1,
+                                (i) => DropdownMenuItem(
+                                  value: i,
+                                  child: Text(i == 0 ? 'Tidak dipilih' : '$i'),
+                                ),
+                              ),
+                              onChanged: maxQuantity == 0 || _submitting
+                                  ? null
+                                  : (value) => setState(
+                                        () => _quantities[item.idDetailPesanan] = value ?? 0,
+                                      ),
                             ),
                           ),
                         ],

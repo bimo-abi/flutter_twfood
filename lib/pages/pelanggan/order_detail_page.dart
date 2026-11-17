@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/order.dart';
 import '../../services/customer_order_service.dart';
+import '../../services/payment_service.dart';
+import '../../services/retur_service.dart';
 import 'pengajuan_retur_page.dart';
 import 'riwayat_retur_page.dart';
 
@@ -17,17 +20,46 @@ class OrderDetailPage extends StatefulWidget {
 
 class _OrderDetailPageState extends State<OrderDetailPage> {
   late Future<CustomerOrder> _future;
+  bool _isStartingSettlement = false;
+  bool _loadingReturnEligibility = true;
+  ReturnEligibilitySummary? _returnEligibility;
+  String? _returnEligibilityError;
 
   @override
   void initState() {
     super.initState();
     _future = CustomerOrderService.getDetail(widget.idPesanan);
+    _loadReturnEligibility();
   }
 
-  void _reload() {
+  Future<void> _loadReturnEligibility() async {
     setState(() {
-      _future = CustomerOrderService.getDetail(widget.idPesanan);
+      _loadingReturnEligibility = true;
+      _returnEligibilityError = null;
     });
+    try {
+      final summary = await ReturnService.getEligibilityForOrder(widget.idPesanan);
+      if (!mounted) return;
+      setState(() => _returnEligibility = summary);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _returnEligibilityError = error.toString());
+    } finally {
+      if (mounted) setState(() => _loadingReturnEligibility = false);
+    }
+  }
+
+  Future<void> _reload() async {
+    final request = CustomerOrderService.getDetail(widget.idPesanan);
+    setState(() => _future = request);
+
+    // RefreshIndicator menunggu permintaan selesai, bukan hanya perubahan state.
+    try {
+      await request;
+    } catch (_) {
+      // Error tetap ditampilkan oleh FutureBuilder.
+    }
+    await _loadReturnEligibility();
   }
 
   Future<void> _openTrackingLink(String link) async {
@@ -62,6 +94,70 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  int _paidAmount(CustomerOrder order) {
+    return order.payments
+        .where((payment) => payment.statusPembayaran == 'paid')
+        .fold(0, (total, payment) => total + payment.jumlahPembayaran);
+  }
+
+  int _remainingBalance(CustomerOrder order) {
+    final remaining = order.totalPesanan - _paidAmount(order);
+    return remaining > 0 ? remaining : 0;
+  }
+
+  bool _canSettle(CustomerOrder order) {
+    return order.menggunakanDp &&
+        ['dp_dibayar', 'sebagian_dibayar'].contains(order.statusPembayaran) &&
+        _remainingBalance(order) > 0;
+  }
+
+  Future<void> _startSettlement() async {
+    if (_isStartingSettlement) return;
+
+    setState(() => _isStartingSettlement = true);
+    try {
+      final payment = await PaymentService.createPayment(
+        idPesanan: widget.idPesanan,
+        jenisPembayaran: 'pelunasan',
+      );
+      final rawUrl = payment['redirect_url']?.toString();
+      final uri = rawUrl == null ? null : Uri.tryParse(rawUrl);
+
+      if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+        _showMessage(
+          'Transaksi pelunasan dibuat, tetapi tautan Midtrans tidak valid. '
+          'Muat ulang detail pesanan sebelum mencoba kembali.',
+        );
+        _reload();
+        return;
+      }
+
+      final opened = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && mounted) {
+        _showMessage('Tidak dapat membuka halaman pembayaran Midtrans.');
+      }
+      if (mounted) _reload();
+    } on PaymentApiException catch (error) {
+      if (mounted) {
+        _showMessage(error.message);
+        _reload();
+      }
+    } catch (_) {
+      if (mounted) {
+        _showMessage(
+          'Terjadi kendala saat memulai pelunasan. Periksa detail pesanan '
+          'sebelum mencoba kembali agar tidak membuat transaksi ganda.',
+        );
+        _reload();
+      }
+    } finally {
+      if (mounted) setState(() => _isStartingSettlement = false);
+    }
   }
 
   @override
@@ -102,7 +198,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
           final order = snapshot.data!;
 
           return RefreshIndicator(
-            onRefresh: () async => _reload(),
+            onRefresh: _reload,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
@@ -118,36 +214,110 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     _line('Status pembayaran', _label(order.statusPembayaran)),
                   ],
                 ),
-                if (_canSubmitReturn(order)) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PengajuanReturPage(order: order),
-                        ),
-                      ),
-                      icon: const Icon(Icons.assignment_return_outlined),
-                      label: const Text('Ajukan Retur'),
-                    ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _canOpenReturn(order)
+                        ? () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PengajuanReturPage(
+                                  order: order,
+                                  maxQuantities: {
+                                    for (final item in order.items)
+                                      item.idDetailPesanan:
+                                          _returnEligibility!.remainingFor(item),
+                                  },
+                                ),
+                              ),
+                            );
+                            if (mounted) await _reload();
+                          }
+                        : null,
+                    icon: const Icon(Icons.assignment_return_outlined),
+                    label: const Text('Ajukan Retur'),
                   ),
+                ),
+                if (!_canOpenReturn(order)) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _returnEligibilityMessage(order),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  if (_returnEligibilityError != null)
+                    TextButton.icon(
+                      onPressed: _loadReturnEligibility,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Periksa ulang kelayakan retur'),
+                    ),
                 ],
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RiwayatReturPage(),
-                      ),
-                    ),
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RiwayatReturPage(),
+                        ),
+                      );
+                      if (mounted) await _reload();
+                    },
                     icon: const Icon(Icons.history),
                     label: const Text('Riwayat Retur Saya'),
                   ),
                 ),
+                if (order.menggunakanDp) ...[
+                  const SizedBox(height: 12),
+                  _section(
+                    title: 'Ringkasan DP dan Pelunasan',
+                    children: [
+                      _line('Total tagihan produk', _money(order.totalPesanan)),
+                      if (order.nominalDp != null)
+                        _line('Nominal DP', _money(order.nominalDp!)),
+                      _line('Total pembayaran berhasil', _money(_paidAmount(order))),
+                      _line(
+                        'Sisa tagihan (perkiraan)',
+                        _money(_remainingBalance(order)),
+                        bold: true,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Nominal pelunasan final dihitung kembali oleh Laravel saat transaksi dibuat.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      if (_canSettle(order)) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: _isStartingSettlement ? null : _startSettlement,
+                            icon: _isStartingSettlement
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.payment),
+                            label: Text(
+                              _isStartingSettlement
+                                  ? 'Menyiapkan pembayaran...'
+                                  : 'Lunasi Sisa Pembayaran',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 12),
                 _section(
                   title: 'Produk',
@@ -230,6 +400,25 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     children: [
                       _line('Kurir', order.kurir ?? '-'),
                       _line('Nomor resi', order.nomorResi ?? '-'),
+                      if (order.nomorResi != null &&
+                          order.nomorResi!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () async {
+                              await Clipboard.setData(
+                                ClipboardData(text: order.nomorResi!.trim()),
+                              );
+                              if (mounted) {
+                                _showMessage('Nomor resi berhasil disalin.');
+                              }
+                            },
+                            icon: const Icon(Icons.copy, size: 18),
+                            label: const Text('Salin nomor resi'),
+                          ),
+                        ),
+                      ],
                       _line('Estimasi selesai', _date(order.estimasiSelesai)),
                       if (order.tautanPelacakan != null &&
                           order.tautanPelacakan!.trim().isNotEmpty) ...[
@@ -276,9 +465,67 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         receivedAt == null) {
       return false;
     }
+
     final now = DateTime.now();
     final deadline = receivedAt.add(const Duration(hours: 24));
-    return !now.isBefore(receivedAt) && now.isBefore(deadline);
+    return !now.isBefore(receivedAt) && !now.isAfter(deadline);
+  }
+
+  bool _canOpenReturn(CustomerOrder order) {
+    final summary = _returnEligibility;
+    if (!_canSubmitReturn(order) ||
+        _loadingReturnEligibility ||
+        _returnEligibilityError != null ||
+        summary == null ||
+        summary.hasActiveRequest) {
+      return false;
+    }
+    return order.items.any((item) => summary.remainingFor(item) > 0);
+  }
+
+  String _returnEligibilityMessage(CustomerOrder order) {
+    if (!_canSubmitReturn(order)) return _returnUnavailableReason(order);
+    if (_loadingReturnEligibility) {
+      return 'Sedang memeriksa riwayat dan sisa kuota retur...';
+    }
+    if (_returnEligibilityError != null || _returnEligibility == null) {
+      return 'Tidak dapat memeriksa riwayat retur. Muat ulang halaman sebelum mengajukan retur.';
+    }
+    if (_returnEligibility!.hasActiveRequest) {
+      final nomor = _returnEligibility!.activeReturnNumber;
+      return 'Masih ada pengajuan retur aktif${nomor == null ? '' : ' ($nomor)'}. Tunggu proses tersebut selesai.';
+    }
+    if (!order.items.any((item) => _returnEligibility!.remainingFor(item) > 0)) {
+      return 'Seluruh jumlah produk pada pesanan ini sudah diajukan atau disetujui untuk retur.';
+    }
+    return 'Pengajuan retur belum dapat dilakukan.';
+  }
+
+  String _returnUnavailableReason(CustomerOrder order) {
+    if (order.statusPesanan != 'diterima') {
+      return 'Pengajuan retur tersedia setelah pesanan berstatus diterima.';
+    }
+
+    if (order.statusPembayaran != 'lunas') {
+      return 'Pengajuan retur tersedia setelah pembayaran pesanan lunas.';
+    }
+
+    final receivedAt = order.diterimaPada;
+    if (receivedAt == null) {
+      return 'Waktu penerimaan pesanan belum tercatat. Hubungi admin/mitra untuk pemeriksaan.';
+    }
+
+    final now = DateTime.now();
+    if (now.isBefore(receivedAt)) {
+      return 'Waktu penerimaan pesanan belum valid. Hubungi admin/mitra untuk pemeriksaan.';
+    }
+
+    final deadline = receivedAt.add(const Duration(hours: 24));
+    if (now.isAfter(deadline)) {
+      return 'Batas pengajuan retur 1 × 24 jam setelah pesanan diterima telah berakhir.';
+    }
+
+    return 'Pengajuan retur belum dapat dilakukan.';
   }
 
   Widget _section({required String title, required List<Widget> children}) {

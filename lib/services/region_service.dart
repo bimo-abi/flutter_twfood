@@ -71,11 +71,18 @@ class RegionService {
       throw Exception('Respons API wilayah bukan JSON yang valid.');
     }
 
-    if (decoded is! Map<String, dynamic> || decoded['data'] is! List) {
+    // Emsifa v2 umumnya mengembalikan array JSON langsung. Bentuk
+    // {"data": [...]} tetap diterima untuk kompatibilitas jika provider
+    // atau proxy membungkus respons.
+    final List<dynamic> rawItems;
+    if (decoded is List) {
+      rawItems = decoded;
+    } else if (decoded is Map<String, dynamic> &&
+        decoded['data'] is List) {
+      rawItems = decoded['data'] as List<dynamic>;
+    } else {
       throw Exception('Format respons API wilayah tidak sesuai.');
     }
-
-    final rawItems = decoded['data'] as List<dynamic>;
     try {
       return rawItems
           .map((item) {

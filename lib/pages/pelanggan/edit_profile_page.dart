@@ -1,0 +1,169 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+
+import '../../models/user.dart';
+import '../../services/auth_service.dart';
+
+class EditProfilePage extends StatefulWidget {
+  final User user;
+
+  const EditProfilePage({super.key, required this.user});
+
+  @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _namaController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _teleponController;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _namaController = TextEditingController(text: widget.user.nama);
+    _emailController = TextEditingController(text: widget.user.email);
+    _teleponController =
+        TextEditingController(text: widget.user.nomorTelepon);
+  }
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _emailController.dispose();
+    _teleponController.dispose();
+    super.dispose();
+  }
+
+  String _responseMessage(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final errors = decoded['errors'];
+        if (errors is Map<String, dynamic> && errors.isNotEmpty) {
+          final first = errors.values.first;
+          if (first is List && first.isNotEmpty) return first.first.toString();
+        }
+        if (decoded['message'] != null) return decoded['message'].toString();
+      }
+    } catch (_) {
+      // Gunakan pesan umum jika respons server bukan JSON.
+    }
+    return 'Profil gagal diperbarui. Silakan coba lagi.';
+  }
+
+  Future<void> _saveProfile() async {
+    if (_isSaving || !_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final response = await AuthService.updateProfile(
+        nama: _namaController.text.trim(),
+        email: _emailController.text.trim(),
+        nomorTelepon: _teleponController.text.trim(),
+      );
+
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil berhasil diperbarui.')),
+        );
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_responseMessage(response.body))),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menghubungi server: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Edit Profil')),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            TextFormField(
+              controller: _namaController,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Nama lengkap',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Nama wajib diisi.';
+                }
+                if (value.trim().length > 100) return 'Nama maksimal 100 karakter.';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                final email = value?.trim() ?? '';
+                if (email.isEmpty) return 'Email wajib diisi.';
+                if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+                  return 'Format email tidak valid.';
+                }
+                if (email.length > 150) return 'Email maksimal 150 karakter.';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _teleponController,
+              keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(
+                labelText: 'Nomor telepon',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                final phone = value?.trim() ?? '';
+                if (phone.isEmpty) return 'Nomor telepon wajib diisi.';
+                if (phone.length > 20) return 'Nomor telepon maksimal 20 karakter.';
+                return null;
+              },
+              onFieldSubmitted: (_) => _saveProfile(),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _saveProfile,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Simpan Perubahan'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

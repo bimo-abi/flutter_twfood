@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/notifikasi.dart';
 import '../../services/notifikasi_service.dart';
+import 'order_detail_page.dart';
 
 class NotifikasiPage extends StatefulWidget {
   const NotifikasiPage({super.key});
@@ -12,6 +13,7 @@ class NotifikasiPage extends StatefulWidget {
 
 class _NotifikasiPageState extends State<NotifikasiPage> {
   late Future<List<Notifikasi>> _notifikasiFuture;
+  final Set<int> _processingIds = <int>{};
 
   @override
   void initState() {
@@ -28,32 +30,6 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
   Future<void> _refreshNotifikasi() async {
     setState(_loadNotifikasi);
     await _notifikasiFuture;
-  }
-
-  // Menandai satu notifikasi sebagai sudah dibaca.
-  Future<void> _markRead(Notifikasi notifikasi) async {
-    if (notifikasi.sudahDibaca) return;
-
-    try {
-      await NotifikasiService.markRead(notifikasi.idNotifikasi);
-
-      if (!mounted) return;
-
-      setState(_loadNotifikasi);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Notifikasi berhasil ditandai sudah dibaca.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memperbarui notifikasi: $e')),
-      );
-    }
   }
 
   // Menandai seluruh notifikasi sebagai sudah dibaca.
@@ -76,6 +52,45 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gagal memperbarui notifikasi: $e')),
       );
+    }
+  }
+
+  // Buka detail pesanan dari notifikasi yang memiliki referensi pesanan.
+  Future<void> _openNotification(Notifikasi notifikasi) async {
+    if (_processingIds.contains(notifikasi.idNotifikasi)) return;
+
+    _processingIds.add(notifikasi.idNotifikasi);
+    try {
+      if (!notifikasi.sudahDibaca) {
+        await NotifikasiService.markRead(notifikasi.idNotifikasi);
+      }
+
+      if (!mounted) return;
+
+      if (notifikasi.jenisReferensi == 'pesanan' &&
+          notifikasi.idReferensi != null &&
+          notifikasi.idReferensi! > 0) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderDetailPage(
+              idPesanan: notifikasi.idReferensi!,
+            ),
+          ),
+        );
+      }
+
+      if (mounted) {
+        setState(_loadNotifikasi);
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Notifikasi gagal diproses: $e')),
+      );
+    } finally {
+      _processingIds.remove(notifikasi.idNotifikasi);
     }
   }
 
@@ -205,7 +220,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
           : null,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _markRead(item),
+        onTap: () => _openNotification(item),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -284,7 +299,9 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
                     if (unread) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'Ketuk untuk menandai sudah dibaca',
+                        item.jenisReferensi == 'pesanan' && item.idReferensi != null
+                            ? 'Ketuk untuk melihat detail pesanan'
+                            : 'Ketuk untuk menandai sudah dibaca',
                         style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.primary,

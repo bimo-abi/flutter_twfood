@@ -127,12 +127,14 @@ class CartService {
   // Mengembalikan pesan error jika item tidak layak ditambahkan.
   // Null berarti item berhasil ditambahkan.
   static String? addItem(CartItem newItem) {
-    if (!isInitialized)
+    if (!isInitialized) {
       return 'Sesi pelanggan belum siap. Silakan login kembali.';
+    }
     if (!newItem.product.statusAktif) return 'Produk sedang tidak tersedia.';
     if (!newItem.variant.statusAktif) return 'Varian sedang tidak tersedia.';
-    if (!newItem.price.statusAktif)
+    if (!newItem.price.statusAktif) {
       return 'Harga yang dipilih sudah tidak tersedia.';
+    }
     if (newItem.quantity <= 0) return 'Jumlah pembelian tidak valid.';
     if (newItem.variant.stok <= 0) return 'Stok sedang tidak tersedia.';
     if (!_hasCompatibleWholesaleUnit(newItem)) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/outlet.dart';
 import '../../services/outlet_service.dart';
@@ -26,6 +27,29 @@ class _OutletPageState extends State<OutletPage> {
     });
 
     await _outletsFuture;
+  }
+
+  Future<void> _openGoogleMaps(String link) async {
+    final uri = Uri.tryParse(link);
+
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Link Google Maps tidak valid.')),
+      );
+      return;
+    }
+
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat membuka Google Maps.')),
+      );
+    }
   }
 
   @override
@@ -128,6 +152,19 @@ class _OutletPageState extends State<OutletPage> {
                 'Alamat',
                 outlet.alamat!,
               ),
+
+            if (outlet.linkGoogleMaps != null &&
+                outlet.linkGoogleMaps!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openGoogleMaps(outlet.linkGoogleMaps!),
+                  icon: const Icon(Icons.directions_outlined),
+                  label: const Text('Lihat Lokasi di Google Maps'),
+                ),
+              ),
+            ],
 
             if (outlet.nomorTelepon != null &&
                 outlet.nomorTelepon!.isNotEmpty) ...[

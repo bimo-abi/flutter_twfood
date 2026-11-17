@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../models/product.dart';
 import '../../models/cart_item.dart';
 import '../../services/product_service.dart';
 import '../../services/cart_service.dart';
+import '../../services/auth_service.dart';
+import 'checkout_page.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final int productId;
@@ -201,16 +205,38 @@ class _VariantPurchaseCard extends StatefulWidget {
 class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
   ProductPrice? _selectedPrice;
   int _quantity = 1;
+  late Future<bool> _preOrderCustomerEligibilityFuture;
 
   @override
   void initState() {
     super.initState();
+    _preOrderCustomerEligibilityFuture = _checkPreOrderCustomerEligibility();
 
     if (widget.prices.isNotEmpty) {
       _selectedPrice = widget.prices.firstWhere(
         (price) => price.jenisHarga.toLowerCase() == 'ecer',
         orElse: () => widget.prices.first,
       );
+    }
+  }
+
+  Future<bool> _checkPreOrderCustomerEligibility() async {
+    try {
+      final response = await AuthService.me();
+      if (response.statusCode != 200) return false;
+
+      final decoded = jsonDecode(response.body);
+      final rawUser = decoded is Map ? decoded['data'] : null;
+      if (rawUser is! Map) return false;
+
+      final user = Map<String, dynamic>.from(rawUser);
+      return ['toko', 'horeca'].contains(
+            user['jenis_pelanggan']?.toString().trim().toLowerCase(),
+          ) &&
+          user['status_verifikasi']?.toString().trim().toLowerCase() ==
+              'disetujui';
+    } catch (_) {
+      return false;
     }
   }
 
@@ -275,6 +301,32 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
   bool get _quantityWithinStock =>
       _quantity > 0 && _quantity <= widget.variant.stok;
 
+  bool get _isPreOrderPeriodOpen {
+    final start = widget.variant.tanggalMulaiPreOrder;
+    final end = widget.variant.tanggalSelesaiPreOrder;
+    if (!widget.variant.tersediaPreOrder || start == null || end == null) {
+      return false;
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final localStart = start.toLocal();
+    final localEnd = end.toLocal();
+    final startDate = DateTime(
+      localStart.year,
+      localStart.month,
+      localStart.day,
+    );
+    final endDate = DateTime(localEnd.year, localEnd.month, localEnd.day);
+    return !today.isBefore(startDate) && !today.isAfter(endDate);
+  }
+
+  bool get _canPurchasePreOrder =>
+      _selectedPrice != null &&
+      _isPreOrderPeriodOpen &&
+      _canValidateWholesaleUnit &&
+      _meetsWholesaleMinimum &&
+      _quantity > 0;
+
   bool get _canAddToCart {
     if (_selectedPrice == null || widget.variant.stok <= 0) {
       return false;
@@ -301,7 +353,9 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
     }
 
     if (widget.variant.stok <= 0) {
-      return 'Stok sedang tidak tersedia.';
+      return _isPreOrderPeriodOpen
+          ? 'Stok reguler habis. Gunakan tombol Pesan Pre-order.'
+          : 'Stok reguler sedang tidak tersedia.';
     }
 
     if (!_canValidateWholesaleUnit) {
@@ -314,7 +368,9 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
     }
 
     if (!_quantityWithinStock) {
-      return 'Jumlah pembelian melebihi stok tersedia.';
+      return _isPreOrderPeriodOpen
+          ? 'Jumlah melebihi stok reguler. Gunakan tombol Pesan Pre-order.'
+          : 'Jumlah pembelian melebihi stok tersedia.';
     }
 
     return '';
@@ -330,6 +386,74 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
     setState(() {
       _quantity = nextQuantity;
     });
+  }
+
+  Future<void> _buyNow({required bool preOrder}) async {
+    final price = _selectedPrice;
+    final canProceed = preOrder ? _canPurchasePreOrder : _canAddToCart;
+    if (price == null || !canProceed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            preOrder
+                ? 'Pre-order tidak tersedia atau jumlah belum memenuhi minimum pembelian.'
+                : (_purchaseMessage.isEmpty
+                    ? 'Periksa pilihan harga dan jumlah pembelian.'
+                    : _purchaseMessage),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (preOrder) {
+      try {
+        final response = await AuthService.me();
+        if (response.statusCode != 200) {
+          throw Exception('Sesi pelanggan tidak dapat diverifikasi.');
+        }
+        final decoded = jsonDecode(response.body);
+        final user = decoded is Map && decoded['data'] is Map
+            ? Map<String, dynamic>.from(decoded['data'] as Map)
+            : <String, dynamic>{};
+        final eligible =
+            ['toko', 'horeca'].contains(user['jenis_pelanggan']?.toString()) &&
+            user['status_verifikasi']?.toString() == 'disetujui';
+        if (!eligible) {
+          throw Exception(
+            'Pre-order hanya tersedia untuk pelanggan Toko/Horeca yang sudah terverifikasi.',
+          );
+        }
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                error.toString().replaceFirst('Exception: ', ''),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    final item = CartItem(
+      product: widget.product,
+      variant: widget.variant,
+      price: price,
+      quantity: _quantity,
+    );
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CheckoutPage(
+          initialItems: [item],
+          initialOrderType: preOrder ? 'pre_order' : 'reguler',
+        ),
+      ),
+    );
   }
 
   void _addToCart() {
@@ -391,26 +515,6 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
             const SizedBox(height: 10),
             Text('Stok: ${variant.stok}', style: const TextStyle(fontSize: 15)),
             const SizedBox(height: 12),
-            if (variant.tersediaPreOrder)
-              const Text(
-                'Tersedia Pre-Order',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            if (variant.tanggalMulaiPreOrder != null)
-              Text(
-                'Mulai Pre-Order: '
-                '${_formatDate(variant.tanggalMulaiPreOrder!)}',
-              ),
-            if (variant.tanggalSelesaiPreOrder != null)
-              Text(
-                'Selesai Pre-Order: '
-                '${_formatDate(variant.tanggalSelesaiPreOrder!)}',
-              ),
-            if (variant.estimasiTersedia != null)
-              Text(
-                'Estimasi tersedia: '
-                '${_formatDate(variant.estimasiTersedia!)}',
-              ),
             const SizedBox(height: 14),
             const Text(
               'Harga dan Pembelian',
@@ -480,7 +584,7 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                     ),
                   ),
                   IconButton(
-                    onPressed: _quantity < variant.stok
+                    onPressed: (_isPreOrderPeriodOpen || _quantity < variant.stok)
                         ? () => _changeQuantity(1)
                         : null,
                     icon: const Icon(Icons.add_circle_outline),
@@ -505,7 +609,71 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                 ),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
+                child: FilledButton.icon(
+                  onPressed: _canAddToCart ? () => _buyNow(preOrder: false) : null,
+                  icon: const Icon(Icons.shopping_bag_outlined),
+                  label: const Text('Beli Sekarang'),
+                ),
+              ),
+              FutureBuilder<bool>(
+                future: _preOrderCustomerEligibilityFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.data != true || !_isPreOrderPeriodOpen) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Tersedia Pre-Order',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      if (variant.tanggalMulaiPreOrder != null)
+                        Text(
+                          'Mulai Pre-Order: '
+                          '${_formatDate(variant.tanggalMulaiPreOrder!)}',
+                        ),
+                      if (variant.tanggalSelesaiPreOrder != null)
+                        Text(
+                          'Selesai Pre-Order: '
+                          '${_formatDate(variant.tanggalSelesaiPreOrder!)}',
+                        ),
+                      if (variant.estimasiTersedia != null)
+                        Text(
+                          'Estimasi tersedia: '
+                          '${_formatDate(variant.estimasiTersedia!)}',
+                        ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _canPurchasePreOrder
+                              ? () => _buyNow(preOrder: true)
+                              : null,
+                          icon: const Icon(Icons.event_available),
+                          label: const Text('Pesan Pre-order'),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(top: 6),
+                        child: Text(
+                          'Khusus Toko/Horeca terverifikasi. Pesanan dicatat terpisah dan tidak mengurangi stok reguler.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
                   onPressed: _canAddToCart ? _addToCart : null,
                   icon: const Icon(Icons.add_shopping_cart),
                   label: const Text('Tambah ke Keranjang'),

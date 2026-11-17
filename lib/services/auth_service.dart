@@ -54,6 +54,22 @@ class AuthService {
     return ApiService.getAuthenticated('/me');
   }
 
+  // MEMPERBARUI PROFIL PELANGGAN
+  static Future<http.Response> updateProfile({
+    required String nama,
+    required String email,
+    required String nomorTelepon,
+  }) {
+    return ApiService.patchAuthenticated(
+      '/profile',
+      body: {
+        'nama': nama,
+        'email': email,
+        'nomor_telepon': nomorTelepon,
+      },
+    );
+  }
+
   // ============================================================
   // LOGOUT
   // ============================================================
