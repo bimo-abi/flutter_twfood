@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import 'pages/auth/login_page.dart';
+import 'pages/mitra/home_mitra_page.dart';
 import 'pages/pelanggan/home_pelanggan_page.dart';
 import 'services/auth_service.dart';
 import 'services/cart_service.dart';
@@ -54,7 +55,6 @@ class _SessionGateState extends State<SessionGate> {
     });
 
     try {
-      // 1. Periksa token yang tersimpan.
       final token = await TokenStorage.getToken();
 
       if (token == null || token.isEmpty) {
@@ -62,7 +62,6 @@ class _SessionGateState extends State<SessionGate> {
         return;
       }
 
-      // 2. Validasi token melalui backend.
       final response = await AuthService.me();
 
       if (response.statusCode == 200) {
@@ -70,13 +69,19 @@ class _SessionGateState extends State<SessionGate> {
 
         if (responseData is! Map<String, dynamic> ||
             responseData['data'] is! Map<String, dynamic>) {
-          throw const FormatException('Format profil pengguna tidak valid.');
+          throw const FormatException(
+            'Format profil pengguna tidak valid.',
+          );
         }
 
         final data = responseData['data'] as Map<String, dynamic>;
-
-        // 3. Pastikan akun memiliki role pelanggan.
         final peran = data['peran'];
+
+        if (peran == 'mitra') {
+          CartService.resetSession();
+          _showDestination(const HomeMitraPage());
+          return;
+        }
 
         if (peran != 'pelanggan') {
           await TokenStorage.deleteToken();
@@ -86,14 +91,13 @@ class _SessionGateState extends State<SessionGate> {
 
           setState(() {
             _errorMessage =
-                'Akun ini tidak memiliki akses ke aplikasi pelanggan.';
+                'Akun ini tidak memiliki akses ke aplikasi TWFOOD.';
             _accessDenied = true;
           });
 
           return;
         }
 
-        // 4. Validasi ID pengguna.
         final rawUserId = data['id_pengguna'];
 
         final userId = rawUserId is int
@@ -106,24 +110,23 @@ class _SessionGateState extends State<SessionGate> {
           );
         }
 
-        // 5. Muat keranjang sesuai akun yang tervalidasi.
         await CartService.initializeForUser(userId);
 
-        // 6. Buka halaman utama pelanggan.
         _showDestination(const HomePelangganPage());
         return;
       }
 
-      // Token ditolak oleh backend.
-      if (response.statusCode == 401 || response.statusCode == 403) {
+      if (response.statusCode == 401 ||
+          response.statusCode == 403) {
         await TokenStorage.deleteToken();
         CartService.resetSession();
         _showDestination(const LoginPage());
         return;
       }
 
-      // Error server tidak otomatis menghapus token.
-      throw Exception('Server mengembalikan status ${response.statusCode}.');
+      throw Exception(
+        'Server mengembalikan status ${response.statusCode}.',
+      );
     } catch (e) {
       if (!mounted) return;
 
@@ -163,16 +166,27 @@ class _SessionGateState extends State<SessionGate> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  _accessDenied ? Icons.lock_outline : Icons.wifi_off,
+                  _accessDenied
+                      ? Icons.lock_outline
+                      : Icons.wifi_off,
                   size: 48,
                   color: Colors.grey,
                 ),
                 const SizedBox(height: 16),
-                Text(_errorMessage!, textAlign: TextAlign.center),
+                Text(
+                  _errorMessage!,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: _accessDenied ? _backToLogin : _restoreSession,
-                  child: Text(_accessDenied ? 'Kembali ke Login' : 'Coba Lagi'),
+                  onPressed: _accessDenied
+                      ? _backToLogin
+                      : _restoreSession,
+                  child: Text(
+                    _accessDenied
+                        ? 'Kembali ke Login'
+                        : 'Coba Lagi',
+                  ),
                 ),
               ],
             ),
@@ -182,7 +196,11 @@ class _SessionGateState extends State<SessionGate> {
     }
 
     if (_destination == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     return _destination!;
