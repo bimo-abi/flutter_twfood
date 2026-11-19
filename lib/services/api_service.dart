@@ -64,6 +64,33 @@ class ApiService {
     );
   }
 
+  // MULTIPART AUTHENTICATED (unggah foto/file ke API Laravel).
+  static Future<http.Response> multipartAuthenticated(
+    String endpoint, {
+    required Map<String, String> fields,
+    String? fileField,
+    String? filePath,
+  }) async {
+    final token = await TokenStorage.getToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Token autentikasi tidak ditemukan. Silakan login.');
+    }
+
+    final request = http.MultipartRequest('POST', _url(endpoint));
+    request.headers.addAll({
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+    request.fields.addAll(fields);
+
+    if (fileField != null && filePath != null && filePath.isNotEmpty) {
+      request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
+    }
+
+    final streamed = await _client.send(request);
+    return http.Response.fromStream(streamed);
+  }
+
   // GET AUTHENTICATED
   static Future<http.Response> getAuthenticated(String endpoint) async {
     return _client.get(_url(endpoint), headers: await _authHeaders());

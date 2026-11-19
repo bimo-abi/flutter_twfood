@@ -7,6 +7,7 @@ import '../../services/token_storage.dart';
 import '../../theme/app_colors.dart';
 import '../auth/login_page.dart';
 import 'daftar_pesanan_mitra_page.dart';
+import 'daftar_produk_mitra_page.dart';
 import 'daftar_retur_mitra_page.dart';
 
 class HomeMitraPage extends StatefulWidget {
@@ -300,6 +301,24 @@ class _HomeMitraPageState extends State<HomeMitraPage> {
               },
               icon: const Icon(Icons.shopping_bag_outlined),
               label: const Text('Lihat Semua Pesanan'),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DaftarProdukMitraPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.inventory_2_outlined),
+              label: const Text('Manajemen Produk'),
             ),
           ),
 

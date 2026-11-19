@@ -4,6 +4,7 @@ import '../../models/mitra_retur.dart';
 import '../../services/mitra_retur_service.dart';
 import '../../theme/app_colors.dart';
 import 'detail_retur_mitra_page.dart';
+import 'daftar_refund_mitra_page.dart';
 
 class DaftarReturMitraPage extends StatefulWidget {
   const DaftarReturMitraPage({super.key});
@@ -52,7 +53,19 @@ class _DaftarReturMitraPageState extends State<DaftarReturMitraPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pengelolaan Retur')),
+      appBar: AppBar(
+        title: const Text('Pengelolaan Retur'),
+        actions: [
+          IconButton(
+            tooltip: 'Kelola Refund',
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DaftarRefundMitraPage()),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(

@@ -10,10 +10,7 @@ class MitraReturService {
       query['status_retur'] = status;
     }
 
-    final uri = Uri(
-      path: '/mitra/retur',
-      queryParameters: query,
-    );
+    final uri = Uri(path: '/mitra/retur', queryParameters: query);
     final response = await ApiService.getAuthenticated(uri.toString());
 
     dynamic decoded;
@@ -24,10 +21,10 @@ class MitraReturService {
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final message = decoded is Map
-          ? decoded['message']?.toString()
-          : null;
-      throw Exception(message ?? 'Gagal mengambil daftar retur (${response.statusCode}).');
+      final message = decoded is Map ? decoded['message']?.toString() : null;
+      throw Exception(
+        message ?? 'Gagal mengambil daftar retur (${response.statusCode}).',
+      );
     }
 
     if (decoded is! Map || decoded['data'] is! Map) {
@@ -38,15 +35,14 @@ class MitraReturService {
     final rows = pageData['data'];
     if (rows is! List) return [];
 
-    return rows.whereType<Map>()
-        .map((item) => MitraRetur.fromJson(
-            Map<String, dynamic>.from(item)))
+    return rows
+        .whereType<Map>()
+        .map((item) => MitraRetur.fromJson(Map<String, dynamic>.from(item)))
         .toList();
   }
 
   static Future<MitraRetur> fetchDetail(int idRetur) async {
-    final response =
-        await ApiService.getAuthenticated('/mitra/retur/$idRetur');
+    final response = await ApiService.getAuthenticated('/mitra/retur/$idRetur');
 
     dynamic decoded;
     try {
@@ -56,10 +52,10 @@ class MitraReturService {
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final message = decoded is Map
-          ? decoded['message']?.toString()
-          : null;
-      throw Exception(message ?? 'Gagal mengambil detail retur (${response.statusCode}).');
+      final message = decoded is Map ? decoded['message']?.toString() : null;
+      throw Exception(
+        message ?? 'Gagal mengambil detail retur (${response.statusCode}).',
+      );
     }
 
     if (decoded is! Map || decoded['data'] is! Map) {
@@ -70,4 +66,169 @@ class MitraReturService {
       Map<String, dynamic>.from(decoded['data'] as Map),
     );
   }
+
+  static Future<void> submitDecision({
+    required int idRetur,
+    required String keputusan,
+    String? catatanMitra,
+    String? alasanPenolakan,
+    List<Map<String, dynamic>>? detailRetur,
+  }) async {
+    final body = <String, dynamic>{
+      'keputusan': keputusan,
+      'catatan_mitra': catatanMitra,
+    };
+
+    if (keputusan == 'ditolak') {
+      body['alasan_penolakan'] = alasanPenolakan;
+    }
+
+    if (keputusan == 'disetujui') {
+      body['detail_retur'] = detailRetur;
+    }
+
+    final response = await ApiService.patchAuthenticated(
+      '/mitra/retur/$idRetur/keputusan',
+      body: body,
+    );
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } catch (_) {
+      throw Exception('Respons server tidak dapat dibaca.');
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      String message = 'Gagal menyimpan keputusan retur.';
+
+      if (decoded is Map) {
+        message = decoded['message']?.toString() ?? message;
+
+        final errors = decoded['errors'];
+        if (errors is Map && errors.isNotEmpty) {
+          final firstError = errors.values.first;
+          if (firstError is List && firstError.isNotEmpty) {
+            message = firstError.first.toString();
+          }
+        }
+      }
+
+      throw Exception(message);
+    }
+  }
+
+  static Future<void> submitReturnInstruction({
+    required int idRetur,
+    required String metodePengembalian,
+    required String instruksiPengembalian,
+  }) async {
+    final response = await ApiService.patchAuthenticated(
+      '/mitra/retur/$idRetur/instruksi-pengembalian',
+      body: {
+        'metode_pengembalian': metodePengembalian,
+        'instruksi_pengembalian': instruksiPengembalian,
+      },
+    );
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } catch (_) {
+      throw Exception('Respons server tidak dapat dibaca.');
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      String message = 'Gagal menyimpan instruksi pengembalian.';
+
+      if (decoded is Map) {
+        message = decoded['message']?.toString() ?? message;
+
+        final errors = decoded['errors'];
+        if (errors is Map && errors.isNotEmpty) {
+          final firstError = errors.values.first;
+          if (firstError is List && firstError.isNotEmpty) {
+            message = firstError.first.toString();
+          }
+        }
+      }
+
+      throw Exception(message);
+    }
+  }
+
+  static Future<void> confirmReturnReceived({
+    required int idRetur,
+    String? catatanPenerimaan,
+  }) async {
+    final response = await ApiService.patchAuthenticated(
+      '/mitra/retur/$idRetur/barang-diterima',
+      body: {'catatan_penerimaan': catatanPenerimaan},
+    );
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } catch (_) {
+      throw Exception('Respons server tidak dapat dibaca.');
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      String message = 'Gagal mengonfirmasi penerimaan barang retur.';
+
+      if (decoded is Map) {
+        message = decoded['message']?.toString() ?? message;
+
+        final errors = decoded['errors'];
+        if (errors is Map && errors.isNotEmpty) {
+          final firstError = errors.values.first;
+          if (firstError is List && firstError.isNotEmpty) {
+            message = firstError.first.toString();
+          }
+        }
+      }
+
+      throw Exception(message);
+    }
+  }
+
+
+  static Future<void> inspectReturnedGoods({
+    required int idRetur,
+    String? catatanPemeriksaan,
+    required List<Map<String, dynamic>> detailInspeksi,
+  }) async {
+    final response = await ApiService.patchAuthenticated(
+      '/mitra/retur/$idRetur/pemeriksaan',
+      body: {
+        'catatan_pemeriksaan': catatanPemeriksaan,
+        'detail_inspeksi': detailInspeksi,
+      },
+    );
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } catch (_) {
+      throw Exception('Respons server tidak dapat dibaca.');
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      String message = 'Gagal menyimpan hasil pemeriksaan barang retur.';
+
+      if (decoded is Map) {
+        message = decoded['message']?.toString() ?? message;
+        final errors = decoded['errors'];
+        if (errors is Map && errors.isNotEmpty) {
+          final firstError = errors.values.first;
+          if (firstError is List && firstError.isNotEmpty) {
+            message = firstError.first.toString();
+          }
+        }
+      }
+
+      throw Exception(message);
+    }
+  }
+
 }
