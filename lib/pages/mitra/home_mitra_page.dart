@@ -113,12 +113,12 @@ class _HomeMitraPageState extends State<HomeMitraPage> {
           side: const BorderSide(color: AppColors.border),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(icon, color: color, size: 26),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               Text(
                 value.toString(),
                 style: Theme.of(context).textTheme.headlineMedium,

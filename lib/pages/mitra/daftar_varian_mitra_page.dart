@@ -303,49 +303,236 @@ class _DaftarVarianMitraPageState extends State<DaftarVarianMitraPage> {
         if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(snapshot.error.toString(), textAlign: TextAlign.center), const SizedBox(height: 12), OutlinedButton(onPressed: () => setState(_load), child: const Text('Coba Lagi'))])));
         final variants = snapshot.data ?? [];
         if (variants.isEmpty) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.textSecondary), const SizedBox(height: 12), const Text('Belum ada varian untuk produk ini.'), const SizedBox(height: 12), FilledButton.icon(onPressed: () => _variantDialog(), icon: const Icon(Icons.add), label: const Text('Tambah Varian'))])));
-        return RefreshIndicator(onRefresh: _refresh, child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), children: [Text(widget.productName, style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 12), ...variants.map(_variantCard)]));
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+            children: [
+              Text(
+                widget.productName,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 14),
+              ...variants.map(_variantCard),
+            ],
+          ),
+        );
       }),
       if (_busy) const Positioned.fill(child: ColoredBox(color: Color(0x33000000), child: Center(child: CircularProgressIndicator()))),
     ]),
   );
 
   Widget _variantCard(ProductVariant variant) => Card(
-    margin: const EdgeInsets.only(bottom: 14), elevation: 0, color: AppColors.surface,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: AppColors.border)),
-    child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Expanded(child: Text(variant.namaVarian, style: Theme.of(context).textTheme.titleMedium)), Chip(label: Text(variant.statusAktif ? 'Aktif' : 'Nonaktif'))]),
-      Text('Berat: ${variant.beratGram == null ? '-' : '${variant.beratGram} gram'} • Satuan: ${variant.satuanJual ?? '-'}'),
-      const SizedBox(height: 6),
-      Row(children: [Expanded(child: Text('Stok fisik: ${variant.stok} ${variant.satuanJual ?? ''}', style: Theme.of(context).textTheme.bodyMedium)), TextButton.icon(onPressed: _busy ? null : () => _stockDialog(variant), icon: const Icon(Icons.inventory_2_outlined), label: const Text('Atur Stok'))]),
-      const SizedBox(height: 8),
-      Row(
+    margin: const EdgeInsets.only(bottom: 12),
+    elevation: 0,
+    color: AppColors.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: const BorderSide(color: AppColors.border),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              variant.tersediaPreOrder
-                  ? 'Pre-order: Aktif • ${variant.tanggalMulaiPreOrder?.toString().split(' ').first ?? '-'} s.d. ${variant.tanggalSelesaiPreOrder?.toString().split(' ').first ?? '-'}'
-                  : 'Pre-order: Nonaktif',
-              style: Theme.of(context).textTheme.bodySmall,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  variant.namaVarian,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: (variant.statusAktif ? AppColors.success : AppColors.textSecondary)
+                      .withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  variant.statusAktif ? 'Aktif' : 'Nonaktif',
+                  style: TextStyle(
+                    color: variant.statusAktif ? AppColors.success : AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${variant.beratGram == null ? '-' : '${variant.beratGram} gram'}  •  ${variant.satuanJual ?? '-'}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
             ),
           ),
-          TextButton.icon(
-            onPressed: _busy ? null : () => _preOrderDialog(variant),
-            icon: const Icon(Icons.event_available_outlined),
-            label: const Text('Atur Pre-order'),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.inventory_2_outlined, size: 18, color: AppColors.secondary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Stok fisik: ${variant.stok} ${variant.satuanJual ?? ''}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _busy ? null : () => _stockDialog(variant),
+                  child: const Text('Atur'),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.event_available_outlined,
+                      size: 18,
+                      color: variant.tersediaPreOrder ? AppColors.secondary : AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        variant.tersediaPreOrder ? 'Pre-order aktif' : 'Pre-order nonaktif',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _busy ? null : () => _preOrderDialog(variant),
+                      child: const Text('Atur'),
+                    ),
+                  ],
+                ),
+                if (variant.tersediaPreOrder)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 26, bottom: 2),
+                    child: Text(
+                      '${variant.tanggalMulaiPreOrder?.toString().split(' ').first ?? '-'} s.d. ${variant.tanggalSelesaiPreOrder?.toString().split(' ').first ?? '-'}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 4,
+            runSpacing: 0,
+            children: [
+              TextButton.icon(
+                onPressed: _busy ? null : () => _variantDialog(variant: variant),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Ubah'),
+              ),
+              TextButton.icon(
+                onPressed: _busy ? null : () => _toggleVariant(variant),
+                icon: Icon(
+                  variant.statusAktif ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  size: 18,
+                ),
+                label: Text(variant.statusAktif ? 'Nonaktifkan' : 'Aktifkan'),
+              ),
+            ],
+          ),
+          const Divider(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Text('Daftar Harga', style: Theme.of(context).textTheme.titleSmall),
+              ),
+              TextButton.icon(
+                onPressed: _busy ? null : () => _priceDialog(variant),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Tambah'),
+              ),
+            ],
+          ),
+          if (variant.daftarHarga.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text('Belum ada harga.'),
+            ),
+          ...variant.daftarHarga.map((price) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        price.jenisHarga == 'ecer' ? 'Retail / Ecer' : 'Grosir',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${_rupiah(price.harga)}  •  Minimal ${price.minimalPembelian ?? 1} ${price.satuanMinimal ?? variant.satuanJual ?? ''}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        price.statusAktif ? 'Aktif' : 'Nonaktif',
+                        style: TextStyle(
+                          color: price.statusAktif ? AppColors.success : AppColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (v) {
+                    if (v == 'edit') _priceDialog(variant, price: price);
+                    if (v == 'status') _togglePrice(price);
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'edit', child: Text('Ubah harga')),
+                    PopupMenuItem(
+                      value: 'status',
+                      child: Text(price.statusAktif ? 'Nonaktifkan' : 'Aktifkan'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          )),
         ],
       ),
-      const SizedBox(height: 8),
-      Wrap(spacing: 8, children: [TextButton.icon(onPressed: _busy ? null : () => _variantDialog(variant: variant), icon: const Icon(Icons.edit_outlined), label: const Text('Ubah')), TextButton.icon(onPressed: _busy ? null : () => _toggleVariant(variant), icon: Icon(variant.statusAktif ? Icons.visibility_off_outlined : Icons.visibility_outlined), label: Text(variant.statusAktif ? 'Nonaktifkan' : 'Aktifkan'))]),
-      const Divider(),
-      Row(children: [Expanded(child: Text('Daftar Harga', style: Theme.of(context).textTheme.titleSmall)), TextButton.icon(onPressed: _busy ? null : () => _priceDialog(variant), icon: const Icon(Icons.add), label: const Text('Tambah Harga'))]),
-      if (variant.daftarHarga.isEmpty) const Text('Belum ada harga.'),
-      ...variant.daftarHarga.map((price) => ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(price.jenisHarga == 'ecer' ? 'Retail / Ecer' : 'Grosir'),
-        subtitle: Text('${_rupiah(price.harga)} • Minimal ${price.minimalPembelian ?? 1} ${price.satuanMinimal ?? variant.satuanJual ?? ''} • ${price.statusAktif ? 'Aktif' : 'Nonaktif'}'),
-        trailing: PopupMenuButton<String>(onSelected: (v) { if (v == 'edit') _priceDialog(variant, price: price); if (v == 'status') _togglePrice(price); }, itemBuilder: (_) => [const PopupMenuItem(value: 'edit', child: Text('Ubah harga')), PopupMenuItem(value: 'status', child: Text(price.statusAktif ? 'Nonaktifkan' : 'Aktifkan'))]),
-      )),
-    ])),
+    ),
   );
 }
