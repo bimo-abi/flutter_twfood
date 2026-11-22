@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../config/api_config.dart';
 import '../../models/product.dart';
 import '../../services/product_service.dart';
 import '../../theme/app_colors.dart';
@@ -311,13 +312,34 @@ class _ProductPageState extends State<ProductPage> {
     );
   }
 
+  String _resolveProductImageUrl(String imagePath) {
+    final path = imagePath.trim();
+    if (path.isEmpty) return '';
+
+    // URL produk lokal lama diarahkan ke endpoint API yang menerapkan CORS.
+    String filename;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      final uri = Uri.tryParse(path);
+      if (uri == null || !uri.path.contains('/storage/products/')) {
+        return path;
+      }
+      filename = uri.pathSegments.isEmpty ? '' : uri.pathSegments.last;
+    } else {
+      final segments = path.split('/')..removeWhere((part) => part.isEmpty);
+      filename = segments.isEmpty ? '' : segments.last;
+    }
+
+    if (filename.isEmpty) return '';
+    return '${ApiConfig.baseUrl}/media/products/${Uri.encodeComponent(filename)}';
+  }
+
   Widget _productImage(String? imageUrl) {
     if (imageUrl == null || imageUrl.trim().isEmpty) {
       return _imagePlaceholder();
     }
 
     return Image.network(
-      imageUrl,
+      _resolveProductImageUrl(imageUrl),
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => _imagePlaceholder(),
       loadingBuilder: (context, child, progress) {

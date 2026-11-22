@@ -7,6 +7,7 @@ class User {
   final String jenisPelanggan;
   final bool? statusAktif;
   final String? statusVerifikasi;
+  final String? fotoProfil;
 
   const User({
     required this.idPengguna,
@@ -17,31 +18,32 @@ class User {
     required this.jenisPelanggan,
     this.statusAktif,
     this.statusVerifikasi,
+    this.fotoProfil,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      idPengguna: json['id_pengguna'],
-      nama: json['nama'],
-      email: json['email'],
-      nomorTelepon: json['nomor_telepon'],
-      peran: json['peran'],
-      jenisPelanggan: json['jenis_pelanggan'],
-      statusAktif: json['status_aktif'],
+      idPengguna: (json['id_pengguna'] as num).toInt(),
+      nama: json['nama']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      nomorTelepon: json['nomor_telepon']?.toString() ?? '',
+      peran: json['peran']?.toString() ?? '',
+      jenisPelanggan: json['jenis_pelanggan']?.toString() ?? '',
+      statusAktif: json['status_aktif'] as bool?,
       statusVerifikasi: json['status_verifikasi'] as String?,
+      fotoProfil: json['foto_profil'] as String?,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id_pengguna': idPengguna,
-      'nama': nama,
-      'email': email,
-      'nomor_telepon': nomorTelepon,
-      'peran': peran,
-      'jenis_pelanggan': jenisPelanggan,
-      'status_aktif': statusAktif,
-      'status_verifikasi': statusVerifikasi,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'id_pengguna': idPengguna,
+    'nama': nama,
+    'email': email,
+    'nomor_telepon': nomorTelepon,
+    'peran': peran,
+    'jenis_pelanggan': jenisPelanggan,
+    'status_aktif': statusAktif,
+    'status_verifikasi': statusVerifikasi,
+    'foto_profil': fotoProfil,
+  };
 }

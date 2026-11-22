@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../models/outlet.dart';
 import '../../services/outlet_service.dart';
@@ -145,7 +147,12 @@ class _OutletPageState extends State<OutletPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildOutletImage(outlet),
+            if (outlet.foto != null && outlet.foto!.isNotEmpty)
+              _buildOutletImage(outlet),
+            if (outlet.latitude != null && outlet.longitude != null) ...[
+              const SizedBox(height: 12),
+              _buildOutletMap(outlet),
+            ],
 
             const SizedBox(height: 16),
 
@@ -253,6 +260,85 @@ class _OutletPageState extends State<OutletPage> {
               ),
             )
           : const Icon(Icons.store_outlined, size: 60),
+    );
+  }
+
+  Widget _buildOutletMap(Outlet outlet) {
+    final point = LatLng(outlet.latitude!, outlet.longitude!);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        height: 210,
+        child: Stack(
+          children: [
+            FlutterMap(
+              options: MapOptions(
+                initialCenter: point,
+                initialZoom: 15,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.none,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.twfood.app',
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: point,
+                      width: 48,
+                      height: 48,
+                      child: const Icon(
+                        Icons.location_pin,
+                        color: Colors.red,
+                        size: 42,
+                      ),
+                    ),
+                  ],
+                ),
+                const RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution('OpenStreetMap contributors'),
+                  ],
+                ),
+              ],
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () {
+                    final link = outlet.linkGoogleMaps;
+                    if (link != null && link.isNotEmpty) {
+                      _openGoogleMaps(link);
+                    } else {
+                      _openGoogleMaps(
+                        'https://www.google.com/maps/search/?api=1&query=${outlet.latitude},${outlet.longitude}',
+                      );
+                    }
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.open_in_new, size: 16),
+                        SizedBox(width: 5),
+                        Text('Buka Maps'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -134,30 +134,9 @@ class _RegisterPageState extends State<RegisterPage> {
       }
 
       if (response.statusCode == 201) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Registrasi berhasil.')));
-
-        _namaController.clear();
-        _emailController.clear();
-        _nomorTeleponController.clear();
-        _passwordController.clear();
-        _konfirmasiPasswordController.clear();
-
-        _namaBisnisController.clear();
-        _namaPicController.clear();
-        _nomorTeleponBisnisController.clear();
-        _alamatBisnisController.clear();
-        _kotaController.clear();
-        _provinsiController.clear();
-        _kodePosController.clear();
-        _nibController.clear();
-        _npwpController.clear();
-
-        setState(() {
-          _jenisPelanggan = 'umum';
-        });
-
+        // Kembali ke halaman Login dan kirim tanda bahwa registrasi berhasil.
+        // Halaman Login akan menampilkan pesan sukses setelah halaman ini ditutup.
+        Navigator.pop(context, true);
         return;
       }
 

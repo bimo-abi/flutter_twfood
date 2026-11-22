@@ -1,4 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:image_picker/image_picker.dart';
+
+import '../../config/api_config.dart';
 
 import 'package:flutter/material.dart';
 
@@ -22,6 +27,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late final TextEditingController _emailController;
   late final TextEditingController _teleponController;
   bool _isSaving = false;
+  XFile? _selectedPhoto;
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -38,6 +45,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _emailController.dispose();
     _teleponController.dispose();
     super.dispose();
+  }
+
+  Future<void> _choosePhoto() async {
+    final photo = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 82,
+      maxWidth: 1200,
+    );
+    if (photo != null && mounted) setState(() => _selectedPhoto = photo);
   }
 
   String _responseMessage(String body) {
@@ -70,6 +86,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (!mounted) return;
       if (response.statusCode == 200) {
+        if (_selectedPhoto != null) {
+          final photoResponse = await AuthService.uploadProfilePhoto(_selectedPhoto!.path);
+          if (photoResponse.statusCode != 200) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(_responseMessage(photoResponse.body))),
+            );
+            return;
+          }
+        }
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profil berhasil diperbarui.')),
         );
@@ -99,6 +126,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           children: [
+            Center(
+              child: Column(children: [
+                CircleAvatar(
+                  radius: 48,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.10),
+                  backgroundImage: _selectedPhoto != null
+                      ? FileImage(File(_selectedPhoto!.path))
+                      : (widget.user.fotoProfil != null && widget.user.fotoProfil!.isNotEmpty
+                          ? NetworkImage(Uri.parse(widget.user.fotoProfil!).hasScheme
+                              ? widget.user.fotoProfil!
+                              : Uri.parse('${Uri.parse(ApiConfig.baseUrl).origin}${widget.user.fotoProfil}').toString())
+                          : null) as ImageProvider?,
+                  child: _selectedPhoto == null && (widget.user.fotoProfil == null || widget.user.fotoProfil!.isEmpty)
+                      ? const Icon(Icons.person_outline, size: 48, color: AppColors.primary)
+                      : null,
+                ),
+                TextButton.icon(
+                  onPressed: _isSaving ? null : _choosePhoto,
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: const Text('Pilih foto profil'),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(

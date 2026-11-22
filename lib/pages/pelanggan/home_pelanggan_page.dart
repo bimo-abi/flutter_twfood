@@ -561,31 +561,31 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
 
   Widget _buildOutletSection() {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: AppColors.accent.withOpacity(0.20),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.location_on_outlined,
-                color: AppColors.secondary, size: 25),
+                color: AppColors.secondary, size: 22),
           ),
-          const SizedBox(width: 13),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Kunjungi Outlet', style: AppTextStyles.headingSmall),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 const Text(
                   'Lihat alamat dan jam operasional outlet TWFOOD.',
                   style: AppTextStyles.bodySmall,

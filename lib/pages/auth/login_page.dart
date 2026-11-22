@@ -7,6 +7,7 @@ import '../../pages/pelanggan/home_pelanggan_page.dart';
 import '../../services/auth_service.dart';
 import '../../services/cart_service.dart';
 import '../../services/token_storage.dart';
+import '../../services/remember_me_storage.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../pages/mitra/home_mitra_page.dart';
@@ -27,6 +28,47 @@ class _LoginPageState extends State<LoginPage> {
 
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _rememberMe = false;
+  bool _rememberMeLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberedCredentials();
+  }
+
+  Future<void> _loadRememberedCredentials() async {
+    try {
+      final credentials = await RememberMeStorage.load();
+      if (!mounted) return;
+
+      setState(() {
+        _rememberMe = credentials != null;
+        if (credentials != null) {
+          _emailController.text = credentials.email;
+          _passwordController.text = credentials.password;
+        }
+        _rememberMeLoaded = true;
+      });
+    } catch (e) {
+      debugPrint('Gagal membaca Remember Me: $e');
+      if (mounted) {
+        setState(() => _rememberMeLoaded = true);
+      }
+    }
+  }
+
+  Future<void> _saveRememberedCredentials(Map<String, dynamic> userData) async {
+    if (_rememberMe) {
+      await RememberMeStorage.save(
+        name: userData['nama']?.toString() ?? '',
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    } else {
+      await RememberMeStorage.clear();
+    }
+  }
 
   @override
   void dispose() {
@@ -154,6 +196,9 @@ class _LoginPageState extends State<LoginPage> {
             }
 
             CartService.resetSession();
+            await _saveRememberedCredentials(
+              meData['data'] as Map<String, dynamic>,
+            );
           } catch (e) {
             await TokenStorage.deleteToken();
             CartService.resetSession();
@@ -219,6 +264,7 @@ class _LoginPageState extends State<LoginPage> {
 
             // Muat keranjang milik pengguna yang login.
             await CartService.initializeForUser(userId);
+            await _saveRememberedCredentials(meUser);
           } catch (e) {
             // Batalkan persiapan sesi jika gagal.
             CartService.resetSession();
@@ -318,10 +364,16 @@ class _LoginPageState extends State<LoginPage> {
   // NAVIGASI KE REGISTER
   // ============================================================
 
-  void _goToRegister() {
-    Navigator.push(
+  Future<void> _goToRegister() async {
+    final registrationSucceeded = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => const RegisterPage()),
+    );
+
+    if (!mounted || registrationSucceeded != true) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Registrasi berhasil. Silakan masuk.')),
     );
   }
 
@@ -441,7 +493,24 @@ class _LoginPageState extends State<LoginPage> {
                                   ? 'Password wajib diisi.'
                                   : null,
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 12),
+                            CheckboxListTile(
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              title: const Text('Ingat saya'),
+                              subtitle: const Text(
+                                'Simpan email dan password di perangkat ini.',
+                              ),
+                              value: _rememberMe,
+                              onChanged: _rememberMeLoaded && !_isLoading
+                                  ? (value) {
+                                      setState(() {
+                                        _rememberMe = value ?? false;
+                                      });
+                                    }
+                                  : null,
+                            ),
+                            const SizedBox(height: 12),
                             SizedBox(
                               height: 52,
                               child: ElevatedButton(

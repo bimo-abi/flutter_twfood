@@ -70,6 +70,16 @@ class AuthService {
     );
   }
 
+  // Mengunggah foto profil pengguna yang sedang login.
+  static Future<http.Response> uploadProfilePhoto(String filePath) {
+    return ApiService.multipartAuthenticated(
+      '/profile/photo',
+      fields: {},
+      fileField: 'foto_profil',
+      filePath: filePath,
+    );
+  }
+
   // ============================================================
   // LOGOUT
   // ============================================================
