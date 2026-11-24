@@ -10,6 +10,7 @@ class MitraRetur {
   final Map<String, dynamic> pesanan;
   final List<Map<String, dynamic>> detailRetur;
   final List<Map<String, dynamic>> buktiRetur;
+  final List<Map<String, dynamic>> refund;
 
   const MitraRetur({
     required this.idRetur,
@@ -23,6 +24,7 @@ class MitraRetur {
     required this.pesanan,
     required this.detailRetur,
     required this.buktiRetur,
+    required this.refund,
   });
 
   factory MitraRetur.fromJson(Map<String, dynamic> json) {
@@ -48,6 +50,7 @@ class MitraRetur {
       pesanan: asMap(json['pesanan']),
       detailRetur: asList(json['detail_retur']),
       buktiRetur: asList(json['bukti_retur']),
+      refund: asList(json['refund']),
     );
   }
 

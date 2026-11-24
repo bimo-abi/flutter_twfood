@@ -10,14 +10,12 @@ class MitraDashboardData {
     required this.perluDiproses,
     required this.siapDiserahkan,
     required this.dalamPengiriman,
-    required this.pesananTerbaru,
   });
 
   final int totalPesanan;
   final int perluDiproses;
   final int siapDiserahkan;
   final int dalamPengiriman;
-  final List<Map<String, dynamic>> pesananTerbaru;
 }
 
 class MitraDashboardService {
@@ -25,7 +23,7 @@ class MitraDashboardService {
 
   static Future<MitraDashboardData> fetchDashboard() async {
     final responses = await Future.wait<http.Response>([
-      ApiService.getAuthenticated('/mitra/pesanan?per_page=5'),
+      ApiService.getAuthenticated('/mitra/pesanan?per_page=1'),
       ApiService.getAuthenticated(
         '/mitra/pesanan?status_pesanan=sedang_diproses&per_page=1',
       ),
@@ -57,7 +55,6 @@ class MitraDashboardService {
       perluDiproses: _readTotal(processing),
       siapDiserahkan: _readTotal(readyDelivery) + _readTotal(readyPickup),
       dalamPengiriman: _readTotal(inDelivery),
-      pesananTerbaru: _readOrders(allOrders),
     );
   }
 
@@ -76,18 +73,6 @@ class MitraDashboardService {
     final value = paginator['total'];
     if (value is int) return value;
     return int.tryParse(value?.toString() ?? '') ?? 0;
-  }
-
-  static List<Map<String, dynamic>> _readOrders(
-    Map<String, dynamic> paginator,
-  ) {
-    final rows = paginator['data'];
-    if (rows is! List) return const [];
-
-    return rows
-        .whereType<Map>()
-        .map((row) => Map<String, dynamic>.from(row))
-        .toList(growable: false);
   }
 
   static Exception _responseException(http.Response response) {

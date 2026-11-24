@@ -410,7 +410,13 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     title: 'Pengiriman',
                     children: [
                       _line('Kurir', order.kurir ?? '-'),
-                      _line('Nomor resi', order.nomorResi ?? '-'),
+                      if (order.kurir == 'jnt')
+                        _line(
+                          'Nomor resi J&T',
+                          order.nomorResi?.trim().isNotEmpty == true
+                              ? order.nomorResi!
+                              : 'Belum tersedia',
+                        ),
                       if (order.nomorResi != null &&
                           order.nomorResi!.trim().isNotEmpty) ...[
                         const SizedBox(height: 8),
@@ -433,6 +439,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                       _line('Estimasi selesai', _date(order.estimasiSelesai)),
                       if (order.tautanPelacakan != null &&
                           order.tautanPelacakan!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        SelectableText(
+                          order.tautanPelacakan!,
+                          style: const TextStyle(fontSize: 12),
+                        ),
                         const SizedBox(height: 8),
                         SizedBox(
                           width: double.infinity,

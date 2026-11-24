@@ -725,10 +725,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         '${item.product.namaProduk}\n'
                         '${item.variant.namaVarian} • ${item.quantity} x '
                         'Rp ${item.price.harga}',
+                        softWrap: true,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Text('Rp ${item.subtotal}'),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Rp ${item.subtotal}',
+                        textAlign: TextAlign.end,
+                        softWrap: true,
+                      ),
+                    ),
                   ],
                 ),
               ),

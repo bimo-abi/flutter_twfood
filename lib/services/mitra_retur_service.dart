@@ -1,9 +1,38 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import '../models/mitra_retur.dart';
 import 'api_service.dart';
 
 class MitraReturService {
+  /// Mengambil bukti retur dari penyimpanan privat melalui token Sanctum.
+  static Future<http.Response> getProof(int idBuktiRetur) async {
+    if (idBuktiRetur <= 0) {
+      throw ArgumentError.value(idBuktiRetur, 'idBuktiRetur');
+    }
+
+    final response = await ApiService.getAuthenticated(
+      '/retur/bukti/$idBuktiRetur',
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {
+        decoded = null;
+      }
+      final message = decoded is Map
+          ? decoded['message']?.toString()
+          : null;
+      throw Exception(
+        message ?? 'Gagal mengambil bukti retur (${response.statusCode}).',
+      );
+    }
+
+    return response;
+  }
+
   static Future<List<MitraRetur>> fetchRetur({String? status}) async {
     final query = <String, String>{'per_page': '50'};
     if (status != null && status.isNotEmpty) {

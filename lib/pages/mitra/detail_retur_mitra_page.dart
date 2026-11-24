@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/mitra_retur.dart';
 import '../../services/mitra_retur_service.dart';
 import '../../theme/app_colors.dart';
+import 'detail_refund_mitra_page.dart';
 
 class DetailReturMitraPage extends StatefulWidget {
   final int idRetur;
@@ -987,6 +988,59 @@ class _DetailReturMitraPageState extends State<DetailReturMitraPage> {
           _section('Informasi Pengembalian Dana', [
             _line('Status refund', retur.statusPengembalianDana),
             _line('Nominal refund', _rupiah(retur.nominalPengembalian)),
+            if (retur.refund.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              const Divider(),
+              const Text(
+                'Rincian proses refund',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              ...retur.refund.map((item) {
+                final idRefund =
+                    int.tryParse(item['id_refund']?.toString() ?? '') ?? 0;
+                final nominal = item['nominal_refund'];
+                final status =
+                    item['status_refund']?.toString() ?? 'belum_diajukan';
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _line('Refund #$idRefund', _rupiah(nominal)),
+                      _line('Status', status.replaceAll('_', ' ')),
+                      if (idRefund > 0)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => DetailRefundMitraPage(
+                                    idRefund: idRefund,
+                                  ),
+                                ),
+                              );
+                              if (mounted) setState(_load);
+                            },
+                            icon: const Icon(Icons.account_balance_wallet_outlined),
+                            label: const Text('Buka proses refund'),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+            ] else
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Rincian refund belum tersedia. Periksa kembali setelah inspeksi barang selesai.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
           ]),
         ],
       ),

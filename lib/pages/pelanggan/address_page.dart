@@ -180,8 +180,9 @@ class _AddressPageState extends State<AddressPage> {
             return RefreshIndicator(
               onRefresh: _refreshAddresses,
               child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: const [
-                  SizedBox(height: 180),
+                  SizedBox(height: 72),
                   Icon(
                     Icons.location_off_outlined,
                     size: 70,
@@ -337,24 +338,30 @@ class _AddressPageState extends State<AddressPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                //tombol edit
-                OutlinedButton.icon(
-                  onPressed: () {
-                    _openEditAddressPage(address);
-                  },
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Edit'),
+                // Tombol diberi batas lebar agar tidak menerima
+                // constraint horizontal tak terhingga dari parent.
+                SizedBox(
+                  width: 104,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      _openEditAddressPage(address);
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit'),
+                  ),
                 ),
 
                 const SizedBox(width: 8),
 
-                //tombol hapus
-                OutlinedButton.icon(
-                  onPressed: () {
-                    _deleteAddress(address);
-                  },
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('Hapus'),
+                SizedBox(
+                  width: 112,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      _deleteAddress(address);
+                    },
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Hapus'),
+                  ),
                 ),
               ],
             ),

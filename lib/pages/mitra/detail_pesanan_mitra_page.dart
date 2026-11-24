@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../models/mitra_pesanan.dart';
 import '../../services/mitra_pesanan_service.dart';
@@ -322,32 +323,34 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
         (statusBaru != 'diterima' || status != 'dalam_pengiriman' || lunas) &&
         !_updatingStatus;
 
-    return _section('Tindakan Pesanan', [
-      if (keterangan != null)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            keterangan,
-            style: const TextStyle(color: AppColors.textSecondary),
+    return _section(
+      status == 'diterima' ? 'Status Pesanan' : 'Tindakan Pesanan',
+      [
+        if (keterangan != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              keterangan,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
           ),
-        ),
-      if (statusBaru != null)
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: tombolAktif
-                ? () => _ubahStatus(order, statusBaru!, labelTombol!)
-                : null,
-            icon: _updatingStatus
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.check_circle_outline),
-            label: Text(_updatingStatus ? 'Memproses...' : labelTombol!),
+        if (statusBaru != null)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: tombolAktif
+                  ? () => _ubahStatus(order, statusBaru!, labelTombol!)
+                  : null,
+              icon: _updatingStatus
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check_circle_outline),
+              label: Text(_updatingStatus ? 'Memproses...' : labelTombol!),
+            ),
           ),
-        ),
     ]);
   }
 
@@ -631,8 +634,33 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
               'Nomor telepon penerima',
               order.getValue('nomor_telepon_saat_pesan'),
             ),
-            _statusActionSection(order),
             _info('Alamat', order.getValue('alamat_lengkap_saat_pesan')),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final parts = [
+                    order.getValue('nama_penerima_saat_pesan'),
+                    order.getValue('nomor_telepon_saat_pesan'),
+                    order.getValue('alamat_lengkap_saat_pesan'),
+                    order.getValue('desa_kelurahan_saat_pesan'),
+                    order.getValue('kecamatan_saat_pesan'),
+                    order.getValue('kabupaten_kota_saat_pesan'),
+                    order.getValue('provinsi_saat_pesan'),
+                    order.getValue('kode_pos_saat_pesan'),
+                  ].where((value) => value != null && value.toString().trim().isNotEmpty);
+                  final text = parts.join(', ');
+                  if (text.isEmpty) return;
+                  await Clipboard.setData(ClipboardData(text: text));
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Alamat berhasil disalin.')),
+                  );
+                },
+                icon: const Icon(Icons.copy, size: 18),
+                label: const Text('Salin alamat lengkap'),
+              ),
+            ),
             _info('Kecamatan', order.getValue('kecamatan_saat_pesan')),
             _info(
               'Kabupaten/Kota',
@@ -641,6 +669,7 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
             _info('Provinsi', order.getValue('provinsi_saat_pesan')),
             _info('Catatan pesanan', order.getValue('catatan')),
           ]),
+          _statusActionSection(order),
           if (order.jenisPesanan == 'delivery') ...[
             const SizedBox(height: 12),
             _pengirimanSection(order),

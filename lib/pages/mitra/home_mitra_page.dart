@@ -53,55 +53,6 @@ class _HomeMitraPageState extends State<HomeMitraPage> {
     );
   }
 
-  String _formatRupiah(dynamic value) {
-    final number = int.tryParse(value?.toString() ?? '') ?? 0;
-    final formatted = number.toString().replaceAllMapped(
-      RegExp(r'\B(?=(\d{3})+(?!\d))'),
-      (match) => '.',
-    );
-
-    return 'Rp $formatted';
-  }
-
-  String _statusLabel(String? status) {
-    switch (status) {
-      case 'menunggu_pembayaran':
-        return 'Menunggu pembayaran';
-      case 'sedang_diproses':
-        return 'Sedang diproses';
-      case 'siap_dikirim':
-        return 'Siap dikirim';
-      case 'siap_diambil':
-        return 'Siap diambil';
-      case 'dalam_pengiriman':
-        return 'Dalam pengiriman';
-      case 'diterima':
-        return 'Selesai';
-      case 'dibatalkan':
-        return 'Dibatalkan';
-      default:
-        return status?.replaceAll('_', ' ') ?? 'Tidak diketahui';
-    }
-  }
-
-  Color _statusColor(String? status) {
-    switch (status) {
-      case 'sedang_diproses':
-        return AppColors.warning;
-      case 'siap_dikirim':
-      case 'siap_diambil':
-        return AppColors.secondary;
-      case 'dalam_pengiriman':
-        return Colors.blue;
-      case 'diterima':
-        return AppColors.success;
-      case 'dibatalkan':
-        return AppColors.error;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
   Widget _buildMetricCard(String title, int value, IconData icon, Color color) {
     return SizedBox(
       width: (MediaQuery.of(context).size.width - 52) / 2,
@@ -127,85 +78,6 @@ class _HomeMitraPageState extends State<HomeMitraPage> {
               Text(title, style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentOrder(Map<String, dynamic> order) {
-    final customer = order['pengguna'];
-    final customerName = customer is Map
-        ? customer['nama']?.toString() ?? 'Pelanggan'
-        : 'Pelanggan';
-
-    final number =
-        order['nomor_pesanan']?.toString() ?? '#${order['id_pesanan'] ?? '-'}';
-
-    final status = order['status_pesanan']?.toString();
-
-    return Card(
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.receipt_long_outlined,
-                color: AppColors.secondary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(number, style: Theme.of(context).textTheme.titleSmall),
-                  const SizedBox(height: 4),
-                  Text(
-                    customerName,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _formatRupiah(order['total_pesanan']),
-                    style: Theme.of(context).textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _statusColor(status).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _statusLabel(status),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _statusColor(status),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -269,28 +141,9 @@ class _HomeMitraPageState extends State<HomeMitraPage> {
 
           const SizedBox(height: 28),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Pesanan Terbaru',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              IconButton(
-                tooltip: 'Muat ulang',
-                onPressed: () {
-                  setState(_loadDashboard);
-                },
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: ElevatedButton(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -299,8 +152,40 @@ class _HomeMitraPageState extends State<HomeMitraPage> {
                   ),
                 );
               },
-              icon: const Icon(Icons.shopping_bag_outlined),
-              label: const Text('Lihat Semua Pesanan'),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.shopping_bag_outlined),
+                  const SizedBox(width: 10),
+                  const Text('Lihat Semua Pesanan'),
+                  if (data.perluDiproses > 0) ...[
+                    const SizedBox(width: 10),
+                    Container(
+                      constraints: const BoxConstraints(minWidth: 22),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        data.perluDiproses > 99
+                            ? '99+'
+                            : '${data.perluDiproses}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
 
@@ -339,24 +224,6 @@ class _HomeMitraPageState extends State<HomeMitraPage> {
               label: const Text('Kelola Retur'),
             ),
           ),
-
-          if (data.pesananTerbaru.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 30),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    size: 42,
-                    color: AppColors.textSecondary,
-                  ),
-                  SizedBox(height: 10),
-                  Text('Belum ada pesanan.'),
-                ],
-              ),
-            )
-          else
-            ...data.pesananTerbaru.map(_buildRecentOrder),
         ],
       ),
     );

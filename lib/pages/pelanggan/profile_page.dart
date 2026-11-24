@@ -43,7 +43,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _refreshProfile() async {
     final future = _loadUser();
-    setState(() => _userFuture = future);
+    setState(() {
+      _userFuture = future;
+    });
     await future;
   }
 
