@@ -1,6 +1,9 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../theme/app_colors.dart';
 
@@ -35,18 +38,9 @@ class _DetailReturPageState extends State<DetailReturPage> {
       if (isVideo) {
         await showDialog<void>(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Bukti video'),
-            content: const Text(
-              'Bukti video berhasil diambil dari penyimpanan privat. '
-              'Pemutaran video belum tersedia pada aplikasi ini.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Tutup'),
-              ),
-            ],
+          builder: (_) => _ReturVideoPreviewDialog(
+            videoBytes: bytes,
+            fileName: 'bukti_retur_${proof.idBuktiRetur}',
           ),
         );
         return;
@@ -54,9 +48,21 @@ class _DetailReturPageState extends State<DetailReturPage> {
 
       await showDialog<void>(
         context: context,
-        builder: (context) => Dialog(
-          child: InteractiveViewer(
-            child: Image.memory(bytes, fit: BoxFit.contain),
+        builder: (dialogContext) => Dialog(
+          child: Stack(
+            children: [
+              InteractiveViewer(
+                child: Image.memory(bytes, fit: BoxFit.contain),
+              ),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: IconButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -173,7 +179,33 @@ class _DetailReturPageState extends State<DetailReturPage> {
                         if ((refund.alasan ?? '').isNotEmpty) _line('Keterangan', refund.alasan!),
                         if (refund.attempts.isEmpty)
                           const Text('Belum ada percobaan refund.')
-                        else ...refund.attempts.map((attempt) => _refundAttemptCard(attempt)),
+                        else ...refund.attempts.map((attempt) => Card(
+                          margin: const EdgeInsets.only(top: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _line('Percobaan refund', '#${attempt.idPercobaanRefund}'),
+                                _line('Status', _status(attempt.statusPercobaan)),
+                                _line('Nominal', _money(attempt.nominalRefund)),
+                                if ((attempt.metodeRefund ?? '').isNotEmpty) _line('Metode', attempt.metodeRefund!),
+                                if ((attempt.catatan ?? '').isNotEmpty) _line('Catatan', attempt.catatan!),
+                                if (attempt.buktiTersedia)
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton.icon(
+                                      onPressed: () => _viewRefundProof(attempt),
+                                      icon: const Icon(Icons.receipt_long_outlined),
+                                      label: const Text('Lihat bukti refund'),
+                                    ),
+                                  )
+                                else
+                                  const Text('Bukti refund belum tersedia.'),
+                              ],
+                            ),
+                          ),
+                        )),
                       ],
                     ),
                   )),
@@ -203,117 +235,6 @@ class _DetailReturPageState extends State<DetailReturPage> {
     );
   }
 
-  Widget _refundAttemptCard(ReturnRefundAttempt attempt) {
-    final status = _status(attempt.statusPercobaan);
-    Widget detailRow(String label, String value) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 4,
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 6,
-                child: Text(
-                  value,
-                  textAlign: TextAlign.end,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-
-    return Card(
-      margin: const EdgeInsets.only(top: 10),
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.withValues(alpha: 0.20)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Percobaan refund',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                Text(
-                  '#${attempt.idPercobaanRefund}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            detailRow('Status', status),
-            detailRow('Nominal', _money(attempt.nominalRefund)),
-            if ((attempt.metodeRefund ?? '').isNotEmpty)
-              detailRow('Metode', attempt.metodeRefund!),
-            if ((attempt.catatan ?? '').isNotEmpty)
-              detailRow('Catatan', attempt.catatan!),
-            const SizedBox(height: 10),
-            if (attempt.buktiTersedia)
-              SizedBox(
-                width: double.infinity,
-                child: TextButton.icon(
-                  onPressed: () => _viewRefundProof(attempt),
-                  icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                  label: const Text(
-                    'Lihat bukti refund',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red.shade700,
-                    backgroundColor: Colors.red.withValues(alpha: 0.08),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              )
-            else
-              const Text(
-                'Bukti refund belum tersedia.',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _section(String title, List<Widget> children) => Card(color: AppColors.surface, elevation: 1, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)), const SizedBox(height: 12), ...children])));
   Widget _line(String label, String value) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: Text(label, style: const TextStyle(color: AppColors.textSecondary))), const SizedBox(width: 12), Expanded(child: Text(value, textAlign: TextAlign.end))]));
 }
@@ -321,3 +242,199 @@ class _DetailReturPageState extends State<DetailReturPage> {
 String _status(String value) => value.replaceAll('_', ' ');
 String _money(int value) => 'Rp ${value.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}';
 String _date(DateTime? value) { if (value == null) return '-'; final d = value.toLocal(); return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}'; }
+
+class _ReturVideoPreviewDialog extends StatefulWidget {
+  final Uint8List videoBytes;
+  final String fileName;
+
+  const _ReturVideoPreviewDialog({
+    required this.videoBytes,
+    required this.fileName,
+  });
+
+  @override
+  State<_ReturVideoPreviewDialog> createState() =>
+      _ReturVideoPreviewDialogState();
+}
+
+class _ReturVideoPreviewDialogState extends State<_ReturVideoPreviewDialog> {
+  VideoPlayerController? _controller;
+  String? _errorMessage;
+  String? _temporaryFilePath;
+  bool _isLoading = true;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareVideo();
+  }
+
+  Future<void> _prepareVideo() async {
+    File? temporaryFile;
+    VideoPlayerController? controller;
+
+    try {
+      if (widget.videoBytes.isEmpty) {
+        throw Exception('Berkas video kosong.');
+      }
+
+      final safeName = widget.fileName.replaceAll(
+        RegExp(r'[^a-zA-Z0-9_-]'),
+        '_',
+      );
+      temporaryFile = File(
+        '${Directory.systemTemp.path}/$safeName-${DateTime.now().microsecondsSinceEpoch}.mp4',
+      );
+
+      await temporaryFile.writeAsBytes(widget.videoBytes, flush: true);
+      _temporaryFilePath = temporaryFile.path;
+
+      if (!mounted) {
+        await temporaryFile.delete();
+        return;
+      }
+
+      controller = VideoPlayerController.file(temporaryFile);
+      _controller = controller;
+      await controller.initialize();
+
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        await controller?.dispose();
+        try {
+          await temporaryFile?.delete();
+        } catch (_) {}
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = error.toString();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    final controller = _controller;
+    final path = _temporaryFilePath;
+
+    if (controller != null) {
+      controller.dispose().whenComplete(() async {
+        if (path == null) return;
+        try {
+          await File(path).delete();
+        } catch (_) {
+          // Berkas sementara mungkin sudah dibersihkan oleh sistem.
+        }
+      });
+    } else if (path != null) {
+      unawaited(() async {
+        try {
+          await File(path).delete();
+        } catch (_) {
+          // Berkas sementara mungkin sudah dibersihkan oleh sistem.
+        }
+      }());
+    }
+
+    super.dispose();
+  }
+
+  Future<void> _togglePlayback() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    if (controller.value.isPlaying) {
+      await controller.pause();
+    } else {
+      await controller.play();
+    }
+
+    if (mounted) {
+      setState(() {
+        _isPlaying = controller.value.isPlaying;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+
+    return Dialog(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Bukti video',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Tutup',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
+              )
+            else if (_errorMessage != null ||
+                controller == null ||
+                !controller.value.isInitialized)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  _errorMessage == null
+                      ? 'Video tidak dapat diputar.'
+                      : 'Video tidak dapat diputar: $_errorMessage',
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else
+              Column(
+                children: [
+                  AspectRatio(
+                    aspectRatio: controller.value.aspectRatio > 0
+                        ? controller.value.aspectRatio
+                        : 16 / 9,
+                    child: VideoPlayer(controller),
+                  ),
+                  VideoProgressIndicator(
+                    controller,
+                    allowScrubbing: true,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  IconButton(
+                    tooltip: _isPlaying ? 'Jeda' : 'Putar',
+                    onPressed: _togglePlayback,
+                    icon: Icon(
+                      _isPlaying
+                          ? Icons.pause_circle_filled
+                          : Icons.play_circle_filled,
+                      size: 44,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
