@@ -173,33 +173,7 @@ class _DetailReturPageState extends State<DetailReturPage> {
                         if ((refund.alasan ?? '').isNotEmpty) _line('Keterangan', refund.alasan!),
                         if (refund.attempts.isEmpty)
                           const Text('Belum ada percobaan refund.')
-                        else ...refund.attempts.map((attempt) => Card(
-                          margin: const EdgeInsets.only(top: 8),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _line('Percobaan refund', '#${attempt.idPercobaanRefund}'),
-                                _line('Status', _status(attempt.statusPercobaan)),
-                                _line('Nominal', _money(attempt.nominalRefund)),
-                                if ((attempt.metodeRefund ?? '').isNotEmpty) _line('Metode', attempt.metodeRefund!),
-                                if ((attempt.catatan ?? '').isNotEmpty) _line('Catatan', attempt.catatan!),
-                                if (attempt.buktiTersedia)
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton.icon(
-                                      onPressed: () => _viewRefundProof(attempt),
-                                      icon: const Icon(Icons.receipt_long_outlined),
-                                      label: const Text('Lihat bukti refund'),
-                                    ),
-                                  )
-                                else
-                                  const Text('Bukti refund belum tersedia.'),
-                              ],
-                            ),
-                          ),
-                        )),
+                        else ...refund.attempts.map((attempt) => _refundAttemptCard(attempt)),
                       ],
                     ),
                   )),
@@ -225,6 +199,117 @@ class _DetailReturPageState extends State<DetailReturPage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _refundAttemptCard(ReturnRefundAttempt attempt) {
+    final status = _status(attempt.statusPercobaan);
+    Widget detailRow(String label, String value) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 4,
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 6,
+                child: Text(
+                  value,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+    return Card(
+      margin: const EdgeInsets.only(top: 10),
+      elevation: 0,
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Colors.grey.withValues(alpha: 0.20)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Percobaan refund',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  '#${attempt.idPercobaanRefund}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            detailRow('Status', status),
+            detailRow('Nominal', _money(attempt.nominalRefund)),
+            if ((attempt.metodeRefund ?? '').isNotEmpty)
+              detailRow('Metode', attempt.metodeRefund!),
+            if ((attempt.catatan ?? '').isNotEmpty)
+              detailRow('Catatan', attempt.catatan!),
+            const SizedBox(height: 10),
+            if (attempt.buktiTersedia)
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () => _viewRefundProof(attempt),
+                  icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                  label: const Text(
+                    'Lihat bukti refund',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red.shade700,
+                    backgroundColor: Colors.red.withValues(alpha: 0.08),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              )
+            else
+              const Text(
+                'Bukti refund belum tersedia.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

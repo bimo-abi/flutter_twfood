@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -96,13 +99,15 @@ class _DetailReturMitraPageState extends State<DetailReturMitraPage> {
     final isVideo = bukti['jenis_media']?.toString().toLowerCase() == 'video';
     try {
       if (isVideo) {
-        final headers = await MitraReturService.proofAuthHeaders();
+        // Ambil video melalui request HTTP terautentikasi yang sama seperti foto.
+        // Pemutar membaca file lokal agar tidak bergantung pada HTTP Range server.
+        final response = await MitraReturService.getProof(id);
         if (!mounted) return;
         await showDialog<void>(
           context: context,
           builder: (_) => _ReturVideoPreviewDialog(
-            url: MitraReturService.proofPreviewUrl(id),
-            headers: headers,
+            videoBytes: response.bodyBytes,
+            fileName: 'bukti_retur_$id',
           ),
         );
       } else {
@@ -1153,10 +1158,13 @@ class _DetailReturMitraPageState extends State<DetailReturMitraPage> {
 
 
 class _ReturVideoPreviewDialog extends StatefulWidget {
-  final String url;
-  final Map<String, String> headers;
+  final Uint8List videoBytes;
+  final String fileName;
 
-  const _ReturVideoPreviewDialog({required this.url, required this.headers});
+  const _ReturVideoPreviewDialog({
+    required this.videoBytes,
+    required this.fileName,
+  });
 
   @override
   State<_ReturVideoPreviewDialog> createState() =>
@@ -1164,27 +1172,97 @@ class _ReturVideoPreviewDialog extends StatefulWidget {
 }
 
 class _ReturVideoPreviewDialogState extends State<_ReturVideoPreviewDialog> {
-  late final VideoPlayerController _controller;
-  late final Future<void> _initializeFuture;
+  VideoPlayerController? _controller;
+  String? _errorMessage;
+  bool _isLoading = true;
+  bool _isPlaying = false;
+  String? _temporaryFilePath;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse(widget.url),
-      httpHeaders: widget.headers,
-    );
-    _initializeFuture = _controller.initialize();
+    _prepareVideo();
+  }
+
+  Future<void> _prepareVideo() async {
+    try {
+      if (widget.videoBytes.isEmpty) {
+        throw Exception('Berkas video kosong.');
+      }
+
+      final safeName = widget.fileName.replaceAll(
+        RegExp(r'[^a-zA-Z0-9_-]'),
+        '_',
+      );
+      final file = File(
+        '${Directory.systemTemp.path}/$safeName-${DateTime.now().microsecondsSinceEpoch}.mp4',
+      );
+      await file.writeAsBytes(widget.videoBytes, flush: true);
+      _temporaryFilePath = file.path;
+
+      final controller = VideoPlayerController.file(file);
+      _controller = controller;
+      await controller.initialize();
+
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = error.toString();
+      });
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    final controller = _controller;
+    final path = _temporaryFilePath;
+
+    if (controller != null && path != null) {
+      // Hapus file sementara setelah plugin selesai melepas file video.
+      controller.dispose().whenComplete(() async {
+        try {
+          await File(path).delete();
+        } catch (_) {
+          // File sementara boleh dibersihkan oleh sistem jika sudah tidak ada.
+        }
+      });
+    } else {
+      controller?.dispose();
+    }
+
     super.dispose();
+  }
+
+  Future<void> _togglePlayback() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    if (controller.value.isPlaying) {
+      await controller.pause();
+    } else {
+      await controller.play();
+    }
+
+    if (mounted) {
+      setState(() {
+        _isPlaying = controller.value.isPlaying;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = _controller;
+
     return Dialog(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -1198,47 +1276,46 @@ class _ReturVideoPreviewDialogState extends State<_ReturVideoPreviewDialog> {
                 icon: const Icon(Icons.close),
               ),
             ),
-            FutureBuilder<void>(
-              future: _initializeFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(),
-                  );
-                }
-                if (snapshot.hasError || !_controller.value.isInitialized) {
-                  return const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text('Video tidak dapat diputar.'),
-                  );
-                }
-                return Column(
-                  children: [
-                    AspectRatio(
-                      aspectRatio: _controller.value.aspectRatio,
-                      child: VideoPlayer(_controller),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
+              )
+            else if (_errorMessage != null ||
+                controller == null ||
+                !controller.value.isInitialized)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  _errorMessage == null
+                      ? 'Video tidak dapat diputar.'
+                      : 'Video tidak dapat diputar: $_errorMessage',
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else
+              Column(
+                children: [
+                  AspectRatio(
+                    aspectRatio: controller.value.aspectRatio > 0
+                        ? controller.value.aspectRatio
+                        : 16 / 9,
+                    child: VideoPlayer(controller),
+                  ),
+                  VideoProgressIndicator(
+                    controller,
+                    allowScrubbing: true,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  IconButton(
+                    onPressed: _togglePlayback,
+                    icon: Icon(
+                      _isPlaying ? Icons.pause_circle : Icons.play_circle,
+                      size: 42,
                     ),
-                    VideoProgressIndicator(_controller, allowScrubbing: true),
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _controller.value.isPlaying
-                              ? _controller.pause()
-                              : _controller.play();
-                        });
-                      },
-                      icon: Icon(
-                        _controller.value.isPlaying
-                            ? Icons.pause_circle
-                            : Icons.play_circle,
-                        size: 40,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
