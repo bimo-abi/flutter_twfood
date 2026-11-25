@@ -10,12 +10,14 @@ class MitraDashboardData {
     required this.perluDiproses,
     required this.siapDiserahkan,
     required this.dalamPengiriman,
+    required this.returMenungguPersetujuan,
   });
 
   final int totalPesanan;
   final int perluDiproses;
   final int siapDiserahkan;
   final int dalamPengiriman;
+  final int returMenungguPersetujuan;
 }
 
 class MitraDashboardService {
@@ -36,6 +38,9 @@ class MitraDashboardService {
       ApiService.getAuthenticated(
         '/mitra/pesanan?status_pesanan=dalam_pengiriman&per_page=1',
       ),
+      ApiService.getAuthenticated(
+        '/mitra/retur?status_retur=menunggu_persetujuan&per_page=1',
+      ),
     ]);
 
     for (final response in responses) {
@@ -49,12 +54,14 @@ class MitraDashboardService {
     final readyDelivery = _decodePaginator(responses[2]);
     final readyPickup = _decodePaginator(responses[3]);
     final inDelivery = _decodePaginator(responses[4]);
+    final pendingReturns = _decodePaginator(responses[5]);
 
     return MitraDashboardData(
       totalPesanan: _readTotal(allOrders),
       perluDiproses: _readTotal(processing),
       siapDiserahkan: _readTotal(readyDelivery) + _readTotal(readyPickup),
       dalamPengiriman: _readTotal(inDelivery),
+      returMenungguPersetujuan: _readTotal(pendingReturns),
     );
   }
 

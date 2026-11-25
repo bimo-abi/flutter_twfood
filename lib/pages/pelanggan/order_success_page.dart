@@ -184,22 +184,22 @@ class _OrderInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Text(
-            label,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
+        Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(width: 12),
-        Flexible(
+        const SizedBox(height: 6),
+        SizedBox(
+          width: double.infinity,
           child: Text(
             value,
-            textAlign: TextAlign.end,
+            textAlign: TextAlign.start,
+            softWrap: true,
             style: AppTextStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,

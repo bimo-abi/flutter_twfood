@@ -68,6 +68,32 @@ class _DetailReturPageState extends State<DetailReturPage> {
     }
   }
 
+  Future<void> _viewRefundProof(ReturnRefundAttempt attempt) async {
+    try {
+      final Uint8List bytes = await ReturnService.getRefundProof(attempt.idPercobaanRefund);
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => Dialog(
+          child: InteractiveViewer(
+            child: Image.memory(
+              bytes, fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Bukti berhasil diambil, tetapi formatnya bukan gambar. Untuk bukti PDF, gunakan unduhan dari Admin/Mitra.'),
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal membuka bukti refund: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -131,6 +157,52 @@ class _DetailReturPageState extends State<DetailReturPage> {
                       ),
                     ),
                   ],
+                ]),
+                const SizedBox(height: 12),
+                _section('Riwayat Pengembalian Dana', [
+                  if (item.refunds.isEmpty)
+                    const Text('Belum ada data refund untuk retur ini.')
+                  else ...item.refunds.map((refund) => Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _line('Status refund', _status(refund.statusRefund)),
+                        _line('Jenis refund', _status(refund.jenisRefund)),
+                        _line('Nominal refund', _money(refund.nominalRefund)),
+                        if ((refund.alasan ?? '').isNotEmpty) _line('Keterangan', refund.alasan!),
+                        if (refund.attempts.isEmpty)
+                          const Text('Belum ada percobaan refund.')
+                        else ...refund.attempts.map((attempt) => Card(
+                          margin: const EdgeInsets.only(top: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _line('Percobaan refund', '#${attempt.idPercobaanRefund}'),
+                                _line('Status', _status(attempt.statusPercobaan)),
+                                _line('Nominal', _money(attempt.nominalRefund)),
+                                if ((attempt.metodeRefund ?? '').isNotEmpty) _line('Metode', attempt.metodeRefund!),
+                                if ((attempt.catatan ?? '').isNotEmpty) _line('Catatan', attempt.catatan!),
+                                if (attempt.buktiTersedia)
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton.icon(
+                                      onPressed: () => _viewRefundProof(attempt),
+                                      icon: const Icon(Icons.receipt_long_outlined),
+                                      label: const Text('Lihat bukti refund'),
+                                    ),
+                                  )
+                                else
+                                  const Text('Bukti refund belum tersedia.'),
+                              ],
+                            ),
+                          ),
+                        )),
+                      ],
+                    ),
+                  )),
                 ]),
                 if ((item.metodePengembalian ?? '').isNotEmpty ||
                     (item.instruksiPengembalian ?? '').isNotEmpty) ...[

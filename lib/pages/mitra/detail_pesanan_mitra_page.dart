@@ -21,9 +21,20 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
   void initState() {
     super.initState();
     _future = MitraPesananService.fetchDetail(widget.idPesanan);
+    _resiController = TextEditingController();
+    _tautanController = TextEditingController();
   }
 
   bool _updatingStatus = false;
+  late final TextEditingController _resiController;
+  late final TextEditingController _tautanController;
+
+  @override
+  void dispose() {
+    _resiController.dispose();
+    _tautanController.dispose();
+    super.dispose();
+  }
 
   String _rupiah(dynamic value) {
     final amount = int.tryParse(value?.toString() ?? '') ?? 0;
@@ -424,13 +435,11 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
   Future<void> _dialogPengiriman(MitraPesanan order) async {
     String kurir = order.getValue('kurir')?.toString() ?? 'gosend';
 
-    final resiController = TextEditingController(
-      text: order.getValue('nomor_resi')?.toString() ?? '',
-    );
-
-    final tautanController = TextEditingController(
-      text: order.getValue('tautan_pelacakan')?.toString() ?? '',
-    );
+    // Controller dimiliki State halaman agar tetap hidup selama dialog
+    // menjalani animasi penutupan. Jangan dispose tepat setelah showDialog.
+    _resiController.text = order.getValue('nomor_resi')?.toString() ?? '';
+    _tautanController.text =
+        order.getValue('tautan_pelacakan')?.toString() ?? '';
 
     String? errorText;
 
@@ -470,7 +479,7 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
                     const SizedBox(height: 16),
                     if (kurir == 'gosend')
                       TextField(
-                        controller: tautanController,
+                        controller: _tautanController,
                         keyboardType: TextInputType.url,
                         decoration: const InputDecoration(
                           labelText: 'Tautan Tracking GoSend',
@@ -480,7 +489,7 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
                       ),
                     if (kurir == 'jnt')
                       TextField(
-                        controller: resiController,
+                        controller: _resiController,
                         decoration: const InputDecoration(
                           labelText: 'Nomor Resi J&T',
                           border: OutlineInputBorder(),
@@ -504,7 +513,7 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
                 ElevatedButton(
                   onPressed: () {
                     if (kurir == 'gosend') {
-                      final uri = Uri.tryParse(tautanController.text.trim());
+                      final uri = Uri.tryParse(_tautanController.text.trim());
 
                       if (uri == null ||
                           !uri.hasScheme ||
@@ -517,7 +526,7 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
                       }
                     }
 
-                    if (kurir == 'jnt' && resiController.text.trim().isEmpty) {
+                    if (kurir == 'jnt' && _resiController.text.trim().isEmpty) {
                       setDialogState(() {
                         errorText = 'Nomor resi J&T wajib diisi.';
                       });
@@ -526,8 +535,8 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
 
                     Navigator.pop(dialogContext, {
                       'kurir': kurir,
-                      'resi': resiController.text,
-                      'tautan': tautanController.text,
+                      'resi': _resiController.text,
+                      'tautan': _tautanController.text,
                     });
                   },
                   child: const Text('Simpan'),
@@ -538,9 +547,6 @@ class _DetailPesananMitraPageState extends State<DetailPesananMitraPage> {
         );
       },
     );
-
-    resiController.dispose();
-    tautanController.dispose();
 
     if (hasil == null || !mounted) return;
 

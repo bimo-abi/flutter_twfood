@@ -2,17 +2,19 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/mitra_retur.dart';
+import '../config/api_config.dart';
 import 'api_service.dart';
+import 'token_storage.dart';
 
 class MitraReturService {
-  /// Mengambil bukti retur dari penyimpanan privat melalui token Sanctum.
+  /// Mengambil bukti retur dari endpoint preview privat melalui token Sanctum.
   static Future<http.Response> getProof(int idBuktiRetur) async {
     if (idBuktiRetur <= 0) {
       throw ArgumentError.value(idBuktiRetur, 'idBuktiRetur');
     }
 
     final response = await ApiService.getAuthenticated(
-      '/retur/bukti/$idBuktiRetur',
+      '/retur/bukti/$idBuktiRetur/preview',
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -31,6 +33,18 @@ class MitraReturService {
     }
 
     return response;
+  }
+
+  /// URL dan header autentikasi untuk pemutar video yang melakukan streaming.
+  static String proofPreviewUrl(int idBuktiRetur) =>
+      '${ApiConfig.baseUrl}/retur/bukti/$idBuktiRetur/preview';
+
+  static Future<Map<String, String>> proofAuthHeaders() async {
+    final token = await TokenStorage.getToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Token autentikasi tidak ditemukan. Silakan login.');
+    }
+    return {'Authorization': 'Bearer $token', 'Accept': '*/*'};
   }
 
   static Future<List<MitraRetur>> fetchRetur({String? status}) async {

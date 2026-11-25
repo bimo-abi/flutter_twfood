@@ -169,6 +169,26 @@ class ReturnService {
     return response.bodyBytes;
   }
 
+  /// Mengambil bukti refund dari endpoint privat khusus pemilik pesanan.
+  static Future<Uint8List> getRefundProof(int idPercobaanRefund) async {
+    if (idPercobaanRefund <= 0) {
+      throw ArgumentError.value(idPercobaanRefund, 'idPercobaanRefund');
+    }
+    final token = await TokenStorage.getToken();
+    if (token == null || token.isEmpty) {
+      throw const ReturnServiceException('Token autentikasi tidak ditemukan. Silakan login.');
+    }
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/retur/refund/percobaan/$idPercobaanRefund/bukti/preview'),
+      headers: {'Accept': '*/*', 'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200) {
+      final decoded = _decode(utf8.decode(response.bodyBytes, allowMalformed: true));
+      _throwApi(decoded, response.statusCode);
+    }
+    return response.bodyBytes;
+  }
+
   static Future<ReturnRequest> submit({
     required CustomerOrder order,
     required String reason,

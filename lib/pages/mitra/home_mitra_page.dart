@@ -35,6 +35,15 @@ class _HomeMitraPageState extends State<HomeMitraPage> {
     await _dashboardFuture;
   }
 
+  Future<void> _openReturPage() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DaftarReturMitraPage()),
+    );
+    if (!mounted) return;
+    setState(_loadDashboard);
+  }
+
   Future<void> _logout() async {
     try {
       await AuthService.logout();
@@ -211,17 +220,42 @@ class _HomeMitraPageState extends State<HomeMitraPage> {
 
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const DaftarReturMitraPage(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.assignment_return_outlined),
-              label: const Text('Kelola Retur'),
+            child: OutlinedButton(
+              onPressed: _openReturPage,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.assignment_return_outlined),
+                  const SizedBox(width: 10),
+                  const Text('Kelola Retur'),
+                  if (data.returMenungguPersetujuan > 0) ...[
+                    const SizedBox(width: 10),
+                    Container(
+                      constraints: const BoxConstraints(minWidth: 22),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.error,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        data.returMenungguPersetujuan > 99
+                            ? '99+'
+                            : '${data.returMenungguPersetujuan}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ],

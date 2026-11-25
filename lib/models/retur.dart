@@ -18,6 +18,7 @@ class ReturnRequest {
   final String? nomorPesanan;
   final List<ReturnRequestItem> items;
   final List<ReturnProof> proofs;
+  final List<ReturnRefund> refunds;
 
   const ReturnRequest({
     required this.idRetur,
@@ -39,12 +40,14 @@ class ReturnRequest {
     required this.nomorPesanan,
     required this.items,
     required this.proofs,
+    required this.refunds,
   });
 
   factory ReturnRequest.fromJson(Map<String, dynamic> json) {
     final order = json['pesanan'];
     final rawItems = json['detail_retur'];
     final rawProofs = json['bukti_retur'];
+    final rawRefunds = json['riwayat_refund'];
     return ReturnRequest(
       idRetur: _toInt(json['id_retur']),
       idPesanan: _toInt(json['id_pesanan'] ?? (order is Map ? order['id_pesanan'] : null)),
@@ -69,8 +72,74 @@ class ReturnRequest {
       proofs: rawProofs is List
           ? rawProofs.whereType<Map>().map((e) => ReturnProof.fromJson(Map<String, dynamic>.from(e))).toList()
           : const [],
+      refunds: rawRefunds is List
+          ? rawRefunds.whereType<Map>().map((e) => ReturnRefund.fromJson(Map<String, dynamic>.from(e))).toList()
+          : const [],
     );
   }
+}
+
+class ReturnRefund {
+  final int idRefund;
+  final String jenisRefund;
+  final int nominalRefund;
+  final String statusRefund;
+  final String? alasan;
+  final DateTime? disetujuiPada;
+  final DateTime? diprosesPada;
+  final DateTime? selesaiPada;
+  final List<ReturnRefundAttempt> attempts;
+
+  const ReturnRefund({
+    required this.idRefund, required this.jenisRefund, required this.nominalRefund,
+    required this.statusRefund, required this.alasan, required this.disetujuiPada,
+    required this.diprosesPada, required this.selesaiPada, required this.attempts,
+  });
+
+  factory ReturnRefund.fromJson(Map<String, dynamic> json) {
+    final raw = json['riwayat_percobaan'];
+    return ReturnRefund(
+      idRefund: _toInt(json['id_refund']),
+      jenisRefund: json['jenis_refund']?.toString() ?? '-',
+      nominalRefund: _toInt(json['nominal_refund']),
+      statusRefund: json['status_refund']?.toString() ?? '-',
+      alasan: json['alasan']?.toString(),
+      disetujuiPada: DateTime.tryParse(json['disetujui_pada']?.toString() ?? ''),
+      diprosesPada: DateTime.tryParse(json['diproses_pada']?.toString() ?? ''),
+      selesaiPada: DateTime.tryParse(json['selesai_pada']?.toString() ?? ''),
+      attempts: raw is List ? raw.whereType<Map>().map((e) => ReturnRefundAttempt.fromJson(Map<String, dynamic>.from(e))).toList() : const [],
+    );
+  }
+}
+
+class ReturnRefundAttempt {
+  final int idPercobaanRefund;
+  final int nominalRefund;
+  final String statusPercobaan;
+  final String? referensiGateway;
+  final String? metodeRefund;
+  final String? catatan;
+  final bool buktiTersedia;
+  final DateTime? dimulaiPada;
+  final DateTime? selesaiPada;
+
+  const ReturnRefundAttempt({
+    required this.idPercobaanRefund, required this.nominalRefund, required this.statusPercobaan,
+    required this.referensiGateway, required this.metodeRefund, required this.catatan,
+    required this.buktiTersedia, required this.dimulaiPada, required this.selesaiPada,
+  });
+
+  factory ReturnRefundAttempt.fromJson(Map<String, dynamic> json) => ReturnRefundAttempt(
+    idPercobaanRefund: _toInt(json['id_percobaan_refund']),
+    nominalRefund: _toInt(json['nominal_refund']),
+    statusPercobaan: json['status_percobaan']?.toString() ?? '-',
+    referensiGateway: json['referensi_gateway']?.toString(),
+    metodeRefund: json['metode_refund']?.toString(),
+    catatan: json['catatan']?.toString(),
+    buktiTersedia: json['bukti_tersedia'] == true,
+    dimulaiPada: DateTime.tryParse(json['dimulai_pada']?.toString() ?? ''),
+    selesaiPada: DateTime.tryParse(json['selesai_pada']?.toString() ?? ''),
+  );
 }
 
 class ReturnRequestItem {

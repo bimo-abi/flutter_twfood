@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../models/mitra_retur.dart';
 import '../../services/mitra_retur_service.dart';
@@ -80,6 +81,70 @@ class _DetailReturMitraPageState extends State<DetailReturMitraPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _openProofPreview(Map<String, dynamic> bukti) async {
+    final id = int.tryParse(bukti['id_bukti_retur']?.toString() ?? '') ?? 0;
+    if (id <= 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ID bukti retur tidak valid.')),
+      );
+      return;
+    }
+
+    final isVideo = bukti['jenis_media']?.toString().toLowerCase() == 'video';
+    try {
+      if (isVideo) {
+        final headers = await MitraReturService.proofAuthHeaders();
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (_) => _ReturVideoPreviewDialog(
+            url: MitraReturService.proofPreviewUrl(id),
+            headers: headers,
+          ),
+        );
+      } else {
+        final response = await MitraReturService.getProof(id);
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => Dialog(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
+                Flexible(
+                  child: InteractiveViewer(
+                    child: Image.memory(
+                      response.bodyBytes,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('Berkas foto tidak dapat ditampilkan.'),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal membuka bukti: $error')),
+      );
+    }
   }
 
   Future<void> _openDecisionDialog({
@@ -967,9 +1032,10 @@ class _DetailReturMitraPageState extends State<DetailReturMitraPage> {
               ...retur.buktiRetur.map(
                 (bukti) => ListTile(
                   contentPadding: EdgeInsets.zero,
+                  onTap: () => _openProofPreview(bukti),
                   leading: Icon(
-                    bukti['jenis_media'] == 'video'
-                        ? Icons.videocam_outlined
+                    bukti['jenis_media']?.toString() == 'video'
+                        ? Icons.play_circle_outline
                         : Icons.image_outlined,
                     color: AppColors.secondary,
                   ),
@@ -978,9 +1044,8 @@ class _DetailReturMitraPageState extends State<DetailReturMitraPage> {
                         ? 'Bukti video'
                         : 'Bukti foto',
                   ),
-                  subtitle: const Text(
-                    'Berkas tersimpan secara privat di server.',
-                  ),
+                  subtitle: const Text('Ketuk untuk melihat bukti'),
+                  trailing: const Icon(Icons.open_in_new),
                 ),
               ),
           ]),
@@ -1081,6 +1146,101 @@ class _DetailReturMitraPageState extends State<DetailReturMitraPage> {
           }
           return _buildDetail(snapshot.data!);
         },
+      ),
+    );
+  }
+}
+
+
+class _ReturVideoPreviewDialog extends StatefulWidget {
+  final String url;
+  final Map<String, String> headers;
+
+  const _ReturVideoPreviewDialog({required this.url, required this.headers});
+
+  @override
+  State<_ReturVideoPreviewDialog> createState() =>
+      _ReturVideoPreviewDialogState();
+}
+
+class _ReturVideoPreviewDialogState extends State<_ReturVideoPreviewDialog> {
+  late final VideoPlayerController _controller;
+  late final Future<void> _initializeFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.url),
+      httpHeaders: widget.headers,
+    );
+    _initializeFuture = _controller.initialize();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close),
+              ),
+            ),
+            FutureBuilder<void>(
+              future: _initializeFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(),
+                  );
+                }
+                if (snapshot.hasError || !_controller.value.isInitialized) {
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text('Video tidak dapat diputar.'),
+                  );
+                }
+                return Column(
+                  children: [
+                    AspectRatio(
+                      aspectRatio: _controller.value.aspectRatio,
+                      child: VideoPlayer(_controller),
+                    ),
+                    VideoProgressIndicator(_controller, allowScrubbing: true),
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _controller.value.isPlaying
+                              ? _controller.pause()
+                              : _controller.play();
+                        });
+                      },
+                      icon: Icon(
+                        _controller.value.isPlaying
+                            ? Icons.pause_circle
+                            : Icons.play_circle,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
