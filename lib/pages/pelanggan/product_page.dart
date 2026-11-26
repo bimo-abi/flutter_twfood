@@ -91,10 +91,10 @@ class _ProductPageState extends State<ProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Produk'),
-        backgroundColor: AppColors.background,
+        title: const Text('Jelajahi Produk'),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       body: FutureBuilder<List<Product>>(
         future: _productsFuture,
@@ -116,7 +116,7 @@ class _ProductPageState extends State<ProductPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../services/token_storage.dart';
 import '../../services/cart_service.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/theme_mode_tile.dart';
 import '../auth/login_page.dart';
 import 'address_page.dart';
 import 'edit_profile_page.dart';
@@ -182,6 +183,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                   ),
                 ),
+                const SizedBox(height: 8),
+                const ThemeModeTile(),
                 const SizedBox(height: 18),
                 OutlinedButton.icon(
                   onPressed: _isLoggingOut ? null : _logout,

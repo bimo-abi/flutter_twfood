@@ -147,7 +147,7 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
           color: AppColors.primary,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 30),
             children: [
               _buildWelcomeBanner(),
               const SizedBox(height: 28),
@@ -167,8 +167,19 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: AppColors.secondary,
-        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF285C3B), Color(0xFF173D2B)],
+        ),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,8 +576,8 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
       ),
       child: Row(
         children: [
@@ -680,7 +691,8 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.7)),
       ),
       child: Text(message, style: AppTextStyles.bodySmall),
     );

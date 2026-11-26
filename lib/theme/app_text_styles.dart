@@ -5,7 +5,7 @@ import 'app_colors.dart';
 class AppTextStyles {
   AppTextStyles._();
 
-  static const String fontFamily = 'PlusJakartaSans';
+  static const String fontFamily = 'Roboto';
 
   static const TextStyle headingLarge = TextStyle(
     fontFamily: fontFamily,

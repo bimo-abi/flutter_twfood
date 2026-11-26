@@ -9,6 +9,8 @@ import 'services/auth_service.dart';
 import 'services/cart_service.dart';
 import 'services/token_storage.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_mode_controller.dart';
+import 'theme/theme_mode_scope.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,11 +22,49 @@ class TwfoodApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'TWFOOD',
-      theme: AppTheme.lightTheme,
-      home: const SessionGate(),
+    return _TwfoodThemeRoot(child: const SessionGate());
+  }
+}
+
+class _TwfoodThemeRoot extends StatefulWidget {
+  const _TwfoodThemeRoot({required this.child});
+  final Widget child;
+
+  @override
+  State<_TwfoodThemeRoot> createState() => _TwfoodThemeRootState();
+}
+
+class _TwfoodThemeRootState extends State<_TwfoodThemeRoot> {
+  late final ThemeModeController _themeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeController = ThemeModeController();
+    _themeController.load();
+  }
+
+  @override
+  void dispose() {
+    _themeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ThemeModeScope(
+      controller: _themeController,
+      child: AnimatedBuilder(
+        animation: _themeController,
+        builder: (context, _) => MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'TWFOOD',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: _themeController.themeMode,
+          home: widget.child,
+        ),
+      ),
     );
   }
 }
