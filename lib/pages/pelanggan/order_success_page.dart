@@ -29,6 +29,25 @@ class OrderSuccessPage extends StatelessWidget {
     return 'Rp ${buffer.toString()}';
   }
 
+  String _label(String value) {
+    const labels = {
+      'menunggu_pembayaran': 'Menunggu pembayaran',
+      'sedang_diproses': 'Sedang diproses',
+      'siap_diambil': 'Siap diambil',
+      'siap_dikirim': 'Siap dikirim',
+      'dalam_pengiriman': 'Dalam pengiriman',
+      'diterima': 'Diterima',
+      'selesai': 'Selesai',
+      'dibatalkan': 'Dibatalkan',
+      'belum_dibayar': 'Belum dibayar',
+      'pending': 'Menunggu pembayaran',
+      'paid': 'Lunas',
+      'lunas': 'Lunas',
+      'dp_dibayar': 'DP dibayar',
+    };
+    return labels[value] ?? value.replaceAll('_', ' ');
+  }
+
   Future<void> _openPayment(BuildContext context) async {
     final rawUrl = payment?['redirect_url']?.toString();
     final uri = rawUrl == null ? null : Uri.tryParse(rawUrl);
@@ -57,7 +76,11 @@ class OrderSuccessPage extends StatelessWidget {
     final paymentAmount = payment?['jumlah_pembayaran']?.toString();
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: AppColors.background,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
         title: const Text('Pesanan Berhasil'),
       ),
@@ -67,16 +90,25 @@ class OrderSuccessPage extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                width: 104,
-                height: 104,
+                width: 124,
+                height: 124,
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.10),
+                  color: AppColors.success.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check_circle_rounded,
-                  size: 66,
-                  color: AppColors.secondary,
+                alignment: Alignment.center,
+                child: Container(
+                  width: 92,
+                  height: 92,
+                  decoration: const BoxDecoration(
+                    color: AppColors.success,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    size: 56,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -96,22 +128,22 @@ class OrderSuccessPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              Card(
-                color: AppColors.surface,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  side: const BorderSide(color: AppColors.border),
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: AppColors.softShadow,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     children: [
                       _OrderInfoRow(label: 'Nomor pesanan', value: orderNumber),
-                      const Divider(height: 24),
+                      const Divider(height: 24, color: AppColors.border),
                       _OrderInfoRow(label: 'Total pesanan', value: _rupiah(total)),
                       const Divider(height: 24),
-                      _OrderInfoRow(label: 'Status pesanan', value: status),
+                      _OrderInfoRow(label: 'Status pesanan', value: _label(status)),
                       if (paymentAmount != null) ...[
                         const Divider(height: 24),
                         _OrderInfoRow(
@@ -123,7 +155,7 @@ class OrderSuccessPage extends StatelessWidget {
                         const Divider(height: 24),
                         _OrderInfoRow(
                           label: 'Status pembayaran',
-                          value: payment!['status_pembayaran'].toString(),
+                          value: _label(payment!['status_pembayaran'].toString()),
                         ),
                       ],
                     ],

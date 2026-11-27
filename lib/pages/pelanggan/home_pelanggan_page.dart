@@ -66,45 +66,90 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
           const ProfilePage(),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onItemTapped,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_bag_outlined),
-            selectedIcon: Icon(Icons.shopping_bag_rounded),
-            label: 'Produk',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long_rounded),
-            label: 'Pesanan',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_cart_outlined),
-            selectedIcon: Icon(Icons.shopping_cart_rounded),
-            label: 'Keranjang',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book_rounded),
-            label: 'Resep',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profil',
-          ),
-        ],
-      ),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
+  // Menu bawah buatan sendiri: ikon di atas, nama menu di bawah ikon.
+  Widget _buildBottomNav() {
+    const items = [
+      (Icons.home_outlined, Icons.home_rounded, 'Home'),
+      (Icons.shopping_bag_outlined, Icons.shopping_bag_rounded, 'Produk'),
+      (Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Pesanan'),
+      (Icons.shopping_cart_outlined, Icons.shopping_cart_rounded, 'Keranjang'),
+      (Icons.menu_book_outlined, Icons.menu_book_rounded, 'Resep'),
+      (Icons.person_outline_rounded, Icons.person_rounded, 'Profil'),
+    ];
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x1A2B2622),
+            blurRadius: 16,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
+          child: Row(
+            children: [
+              for (var i = 0; i < items.length; i++)
+                Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _onItemTapped(i),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 56,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: _selectedIndex == i
+                                ? AppColors.primarySoft
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            _selectedIndex == i ? items[i].$2 : items[i].$1,
+                            size: 23,
+                            color: _selectedIndex == i
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          items[i].$3,
+                          maxLines: 1,
+                          overflow: TextOverflow.clip,
+                          style: TextStyle(
+                            fontFamily: AppTextStyles.fontFamily,
+                            fontSize: 10.5,
+                            fontWeight: _selectedIndex == i
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                            color: _selectedIndex == i
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   // Memberi jarak kiri-kanan untuk bagian yang tidak scroll menyamping.
   Widget _pad(Widget child) => Padding(

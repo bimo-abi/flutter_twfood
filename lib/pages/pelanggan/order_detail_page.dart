@@ -6,6 +6,8 @@ import '../../models/order.dart';
 import '../../services/customer_order_service.dart';
 import '../../services/payment_service.dart';
 import '../../services/retur_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 import 'pengajuan_retur_page.dart';
 import 'riwayat_retur_page.dart';
 
@@ -163,7 +165,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: AppColors.background,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         title: const Text('Detail Pesanan'),
         actions: [
           IconButton(
@@ -177,7 +183,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           }
 
           if (snapshot.hasError) {
@@ -187,7 +195,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, size: 44),
+                    const Icon(Icons.cloud_off_outlined,
+                        size: 48, color: AppColors.primary),
                     const SizedBox(height: 12),
                     Text(
                       snapshot.error.toString(),
@@ -207,10 +216,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
           final order = snapshot.data!;
 
           return RefreshIndicator(
+            color: AppColors.primary,
             onRefresh: _reload,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
               children: [
                 _OrderStatusHeader(order: order),
                 const SizedBox(height: 12),
@@ -256,9 +266,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                   Text(
                     _returnEligibilityMessage(order),
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                    style: AppTextStyles.bodySmall,
                   ),
                   if (_returnEligibilityError != null)
                     TextButton.icon(
@@ -301,9 +309,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                       const SizedBox(height: 4),
                       Text(
                         'Nominal pelunasan final dihitung kembali oleh Laravel saat transaksi dibuat.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                        style: AppTextStyles.bodySmall,
                       ),
                       if (_canSettle(order)) ...[
                         const SizedBox(height: 12),
@@ -336,23 +342,41 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     if (order.items.isEmpty)
                       const Text('Tidak ada rincian produk.'),
                     ...order.items.map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                      (item) => Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               item.namaProduk,
                               style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                                fontFamily: AppTextStyles.fontFamily,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
                               ),
                             ),
+                            const SizedBox(height: 2),
                             Text(
                               '${item.namaVarian} • ${item.jumlah} × ${_money(item.harga)}',
+                              style: AppTextStyles.bodySmall,
                             ),
+                            const SizedBox(height: 4),
                             Align(
                               alignment: Alignment.centerRight,
-                              child: Text(_money(item.subtotalSetelahDiskon)),
+                              child: Text(
+                                _money(item.subtotalSetelahDiskon),
+                                style: const TextStyle(
+                                  fontFamily: AppTextStyles.fontFamily,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -381,8 +405,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     if (order.payments.isEmpty)
                       const Text('Belum ada catatan pembayaran.'),
                     ...order.payments.map(
-                      (payment) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                      (payment) => Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -551,26 +581,38 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   }
 
   Widget _section({required String title, required List<Widget> children}) {
-    final colors = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colors.outlineVariant),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: AppColors.softShadow,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...children,
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [AppColors.primary, AppColors.secondary],
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(title, style: AppTextStyles.headingSmall),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
       ),
     );
   }
@@ -583,7 +625,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         children: [
           Expanded(
             flex: 5,
-            child: Text(label, style: const TextStyle(color: Colors.grey)),
+            child: Text(label, style: AppTextStyles.bodySmall),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -592,7 +634,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
               value,
               textAlign: TextAlign.end,
               style: TextStyle(
-                fontWeight: bold ? FontWeight.bold : FontWeight.w500,
+                fontFamily: AppTextStyles.fontFamily,
+                fontSize: 13,
+                color: bold ? AppColors.primary : AppColors.textPrimary,
+                fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
           ),
@@ -609,63 +654,86 @@ class _OrderStatusHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final status = _label(order.statusPesanan);
     final normalized = order.statusPesanan.toLowerCase();
-    final Color background;
-    final Color foreground;
+    final List<Color> colors;
     final IconData icon;
 
     if (normalized == 'dibatalkan') {
-      background = colors.errorContainer;
-      foreground = colors.onErrorContainer;
+      colors = const [Color(0xFF8E8780), Color(0xFFB5AEA6)];
       icon = Icons.cancel_outlined;
     } else if (normalized == 'diterima' || normalized == 'selesai') {
-      background = colors.secondaryContainer;
-      foreground = colors.onSecondaryContainer;
+      colors = const [Color(0xFF1B8A4B), Color(0xFF3DB26E)];
       icon = Icons.check_circle_outline_rounded;
     } else if (normalized == 'menunggu_pembayaran') {
-      background = colors.tertiaryContainer;
-      foreground = colors.onTertiaryContainer;
+      colors = const [Color(0xFFF7941D), Color(0xFFF6B83D)];
       icon = Icons.hourglass_top_rounded;
     } else {
-      background = colors.primaryContainer;
-      foreground = colors.onPrimaryContainer;
+      colors = const [AppColors.primary, AppColors.secondary];
       icon = Icons.local_shipping_outlined;
     }
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: colors.first.withValues(alpha: 0.28),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(icon, color: foreground, size: 30),
-          const SizedBox(width: 12),
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.22),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Status pesanan',
-                  style: TextStyle(color: foreground.withValues(alpha: 0.8), fontSize: 12),
+                  style: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    color: Colors.white.withValues(alpha: 0.88),
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   status,
-                  style: TextStyle(
-                    color: foreground,
-                    fontSize: 17,
+                  style: const TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    color: Colors.white,
+                    fontSize: 19,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   order.nomorPesanan,
-                  style: TextStyle(color: foreground, fontSize: 12),
+                  style: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    color: Colors.white.withValues(alpha: 0.92),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
