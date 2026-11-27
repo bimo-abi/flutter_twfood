@@ -105,8 +105,7 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
     );
   }
 
-
-  // Memberi jarak kiri-kanan untuk bagian yang tidak scroll menyamping.
+  // Memberi jarak kiri-kanan untuk bagian yang tidak punya padding sendiri.
   Widget _pad(Widget child) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: child,
@@ -214,8 +213,6 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(0, 8, 0, 28),
               children: [
-                _pad(_buildSearchBar()),
-                const SizedBox(height: 16),
                 _pad(_buildHeroBanner()),
                 const SizedBox(height: 14),
                 _pad(_buildMenuStrip()),
@@ -223,8 +220,6 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
                 _buildProductSection(),
                 const SizedBox(height: 30),
                 _buildRecipeSection(),
-                const SizedBox(height: 30),
-                _pad(_buildOutletSection()),
               ],
             ),
           ),
@@ -240,59 +235,6 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white.withValues(alpha: alpha),
-      ),
-    );
-  }
-
-  // Kolom pencarian: ketuk untuk membuka halaman Produk.
-  Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: AppColors.softShadow,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => setState(() => _selectedIndex = 1),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-            child: Row(
-              children: [
-                const Icon(Icons.search_rounded,
-                    color: AppColors.textSecondary),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'Cari produk, misalnya kaldu',
-                    style: TextStyle(
-                      fontFamily: AppTextStyles.fontFamily,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.bannerGradient,
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -524,23 +466,29 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
               return _pad(_buildErrorPreview('Gagal mengambil data produk.'));
             }
 
-            final products = (snapshot.data ?? []).take(8).toList();
+            // Tampilkan semua produk. Kalau mau dibatasi, tambahkan .take(8)
+            final products = (snapshot.data ?? []).toList();
             if (products.isEmpty) {
               return _pad(_buildEmptyPreview('Belum ada produk tersedia.'));
             }
 
-            // Daftar produk menyamping supaya Beranda terasa hidup.
-            return SizedBox(
-              height: 252,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
-                itemCount: products.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 14),
-                itemBuilder: (context, index) =>
-                    _buildProductCard(products[index]),
+            // Grid 2 kolom yang turun ke bawah. Scroll-nya ikut ListView halaman
+            // Beranda, jadi grid ini sendiri tidak boleh scroll.
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+              itemCount: products.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 18,
+                // Tinggi tiap kartu. Naikkan kalau nama produk terpotong,
+                // turunkan kalau kartu terlalu longgar.
+                mainAxisExtent: 240,
               ),
+              itemBuilder: (context, index) =>
+                  _buildProductCard(products[index]),
             );
           },
         ),
@@ -549,27 +497,27 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
   }
 
   // Kartu produk: foto besar, harga di atas foto, nama di bawah.
+  // Lebar mengikuti kolom grid, foto mengisi sisa tinggi kartu.
   Widget _buildProductCard(Product product) {
     final variants = product.varian.where((item) => item.statusAktif).toList();
     final startingPrice = _startingPrice(product);
 
-    return SizedBox(
-      width: 168,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProductDetailPage(productId: product.idProduk),
-            ),
-          );
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 176,
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailPage(productId: product.idProduk),
+          ),
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              width: double.infinity,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
@@ -630,23 +578,23 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                product.namaProduk,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  height: 1.25,
-                ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              product.namaProduk,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                height: 1.25,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -819,69 +767,6 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  // Ajakan mengunjungi outlet di bagian paling bawah.
-  Widget _buildOutletSection() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.accentSoft, AppColors.secondarySoft],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.6)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: AppColors.softShadow,
-            ),
-            child: const Icon(
-              Icons.location_on_rounded,
-              color: AppColors.primary,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Kunjungi Outlet', style: AppTextStyles.headingSmall),
-                SizedBox(height: 4),
-                Text(
-                  'Lihat alamat dan jam operasional outlet TWFOOD.',
-                  style: AppTextStyles.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: 'Lihat outlet',
-            style: IconButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const OutletPage()),
-              );
-            },
-            icon: const Icon(
-              Icons.arrow_forward_rounded,
-              size: 20,
-              color: Colors.white,
-            ),
-          ),
-        ],
       ),
     );
   }
