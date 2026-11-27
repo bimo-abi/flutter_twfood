@@ -36,13 +36,64 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     await future;
   }
 
+  String _formatRupiah(int value) {
+    final digits = value.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      buffer.write(digits[i]);
+      final remaining = digits.length - i - 1;
+      if (remaining > 0 && remaining % 3 == 0) buffer.write('.');
+    }
+    return 'Rp $buffer';
+  }
+
+  int? _startingPrice(List<ProductVariant> variants) {
+    final prices = variants
+        .expand((variant) => variant.daftarHarga)
+        .where((price) => price.statusAktif)
+        .map((price) => price.harga)
+        .toList();
+    if (prices.isEmpty) return null;
+    prices.sort();
+    return prices.first;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Detail Produk'),
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        automaticallyImplyLeading: false,
+        leadingWidth: 64,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: Material(
+              color: Colors.white,
+              shape: const CircleBorder(),
+              elevation: 3,
+              shadowColor: Colors.black26,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.pop(context),
+                child: const SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    color: AppColors.textPrimary,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
       body: FutureBuilder<Product>(
         future: _productFuture,
@@ -77,56 +128,106 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           final activeVariants = product.varian
               .where((variant) => variant.statusAktif)
               .toList();
+          final startingPrice = _startingPrice(activeVariants);
+          final hasDescription = product.deskripsi != null &&
+              product.deskripsi!.trim().isNotEmpty;
 
           return RefreshIndicator(
             color: AppColors.primary,
+            edgeOffset: 80,
             onRefresh: _refreshProduct,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+              padding: EdgeInsets.zero,
               children: [
                 _buildProductImage(product),
-                const SizedBox(height: 20),
-                Text(product.namaProduk, style: AppTextStyles.headingLarge),
-                if (product.deskripsi != null && product.deskripsi!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    product.deskripsi!,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                      height: 1.55,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Text('Pilih Varian', style: AppTextStyles.headingMedium),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(20),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(product.namaProduk,
+                          style: AppTextStyles.headingLarge),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildPill(
+                            Icons.layers_rounded,
+                            '${activeVariants.length} varian',
+                            AppColors.secondary,
+                            AppColors.secondarySoft,
+                          ),
+                          if (startingPrice != null)
+                            _buildPill(
+                              Icons.sell_rounded,
+                              'Mulai ${_formatRupiah(startingPrice)}',
+                              AppColors.primary,
+                              AppColors.primarySoft,
+                            ),
+                        ],
                       ),
-                      child: Text(
-                        '${activeVariants.length} varian',
-                        style: const TextStyle(
-                          color: AppColors.secondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                      if (hasDescription) ...[
+                        const SizedBox(height: 20),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppColors.softShadow,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Tentang produk',
+                                  style: AppTextStyles.headingSmall),
+                              const SizedBox(height: 8),
+                              Text(
+                                product.deskripsi!,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.textSecondary,
+                                  height: 1.55,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                      ],
+                      const SizedBox(height: 26),
+                      Row(
+                        children: [
+                          Container(
+                            width: 5,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.secondary,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text('Pilih Varian',
+                              style: AppTextStyles.headingMedium),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (activeVariants.isEmpty)
-                  _buildEmptyVariants()
-                else
-                  ...activeVariants.map(
-                    (variant) => _buildVariantCard(product, variant),
+                      const SizedBox(height: 14),
+                      if (activeVariants.isEmpty)
+                        _buildEmptyVariants()
+                      else
+                        ...activeVariants.map(
+                          (variant) => _buildVariantCard(product, variant),
+                        ),
+                    ],
                   ),
+                ),
               ],
             ),
           );
@@ -135,34 +236,97 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
-  Widget _buildProductImage(Product product) {
+  Widget _buildPill(IconData icon, String text, Color color, Color bg) {
     return Container(
-      height: 250,
-      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.border),
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Foto produk besar di bagian atas, sudut bawah membulat.
+  Widget _buildProductImage(Product product) {
+    final hasImage =
+        product.fotoProduk != null && product.fotoProduk!.trim().isNotEmpty;
+
+    return Container(
+      height: 330,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       clipBehavior: Clip.antiAlias,
-      child: product.fotoProduk != null && product.fotoProduk!.isNotEmpty
-          ? Image.network(
-              ProductImageUrl.resolve(product.fotoProduk),
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => _imagePlaceholder(),
-            )
-          : _imagePlaceholder(),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          hasImage
+              ? Image.network(
+                  ProductImageUrl.resolve(product.fotoProduk),
+                  fit: BoxFit.cover,
+                  // Cadangan untuk Chrome (web) bila foto terhalang aturan CORS.
+                  webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _imagePlaceholder(),
+                )
+              : _imagePlaceholder(),
+          // Bayangan tipis di atas agar tombol kembali selalu terlihat.
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 110,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x40000000), Color(0x00000000)],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _imagePlaceholder() {
     return Container(
-      color: AppColors.surface,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.accentSoft, AppColors.secondarySoft],
+        ),
+      ),
       alignment: Alignment.center,
-      child: const Icon(
-        Icons.fastfood_outlined,
-        size: 64,
-        color: AppColors.textSecondary,
+      child: Image.asset(
+        'assets/images/logo.png',
+        width: 96,
+        height: 96,
+        errorBuilder: (_, _, _) => const Icon(
+          Icons.fastfood_rounded,
+          size: 64,
+          color: AppColors.secondary,
+        ),
       ),
     );
   }
@@ -181,15 +345,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   Widget _buildEmptyVariants() {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppColors.softShadow,
       ),
       child: const Column(
         children: [
-          Icon(Icons.inventory_2_outlined, size: 36, color: AppColors.textSecondary),
+          Icon(Icons.inventory_2_outlined,
+              size: 36, color: AppColors.textSecondary),
           SizedBox(height: 8),
           Text('Belum ada varian aktif', style: AppTextStyles.headingSmall),
           SizedBox(height: 4),
@@ -210,9 +376,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_outlined, size: 52, color: AppColors.error),
+            const Icon(Icons.cloud_off_outlined,
+                size: 52, color: AppColors.error),
             const SizedBox(height: 14),
-            Text('Detail produk gagal dimuat', style: AppTextStyles.headingSmall),
+            const Text('Detail produk gagal dimuat',
+                style: AppTextStyles.headingSmall),
             const SizedBox(height: 8),
             Text(
               error,
@@ -246,7 +414,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             const SizedBox(height: 14),
             Text(title, style: AppTextStyles.headingSmall),
             const SizedBox(height: 6),
-            Text(message, textAlign: TextAlign.center, style: AppTextStyles.bodySmall),
+            Text(message,
+                textAlign: TextAlign.center, style: AppTextStyles.bodySmall),
             const SizedBox(height: 18),
             OutlinedButton.icon(
               onPressed: () => Navigator.pop(context),
@@ -570,12 +739,12 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
     final isAvailable = variant.stok > 0;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: AppColors.softShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -587,8 +756,10 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(variant.namaVarian, style: AppTextStyles.headingSmall),
-                    if (variant.beratGram != null || variant.satuanJual != null) ...[
+                    Text(variant.namaVarian,
+                        style: AppTextStyles.headingSmall),
+                    if (variant.beratGram != null ||
+                        variant.satuanJual != null) ...[
                       const SizedBox(height: 4),
                       Text(
                         _buildVariantInfo(variant),
@@ -599,61 +770,101 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: (isAvailable ? AppColors.secondary : AppColors.error)
+                  color: (isAvailable ? AppColors.success : AppColors.error)
                       .withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   isAvailable ? 'Stok ${variant.stok}' : 'Stok habis',
                   style: TextStyle(
-                    color: isAvailable ? AppColors.secondary : AppColors.error,
+                    fontFamily: AppTextStyles.fontFamily,
+                    color: isAvailable ? AppColors.success : AppColors.error,
                     fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Text('Harga dan Pembelian', style: AppTextStyles.headingSmall),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
+          const Divider(height: 1, color: AppColors.border),
+          const SizedBox(height: 14),
           if (widget.prices.isEmpty)
             const Text(
               'Harga aktif belum tersedia.',
               style: AppTextStyles.bodySmall,
             )
           else ...[
-            DropdownButtonFormField<ProductPrice>(
-              initialValue: _selectedPrice,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Pilih jenis harga',
-                prefixIcon: Icon(Icons.sell_outlined),
-              ),
-              items: widget.prices.map((price) {
+            Text('Pilih harga',
+                style: AppTextStyles.bodyMedium
+                    .copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: widget.prices.map((price) {
+                final selected = _selectedPrice == price;
                 final label = price.jenisHarga.toLowerCase() == 'grosir'
                     ? 'Grosir'
                     : 'Ecer';
-                return DropdownMenuItem<ProductPrice>(
-                  value: price,
-                  child: Text(
-                    '$label • ${_formatRupiah(price.harga)}',
-                    overflow: TextOverflow.ellipsis,
+                return InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => setState(() => _selectedPrice = price),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.primarySoft
+                          : AppColors.background,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: selected ? AppColors.primary : AppColors.border,
+                        width: selected ? 1.6 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontFamily: AppTextStyles.fontFamily,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: selected
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatRupiah(price.harga),
+                          style: TextStyle(
+                            fontFamily: AppTextStyles.fontFamily,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: selected
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
-              onChanged: (price) {
-                if (price == null) return;
-                setState(() => _selectedPrice = price);
-              },
             ),
             if (_selectedPrice != null &&
                 _isWholesale &&
                 _selectedPrice!.minimalPembelian != null)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: 10),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
@@ -676,12 +887,14 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
             Row(
               children: [
                 Expanded(
-                  child: Text('Jumlah pembelian', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                  child: Text('Jumlah pembelian',
+                      style: AppTextStyles.bodyMedium
+                          .copyWith(fontWeight: FontWeight.w700)),
                 ),
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
@@ -689,16 +902,26 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                     children: [
                       IconButton(
                         visualDensity: VisualDensity.compact,
-                        onPressed: _quantity > 1 ? () => _changeQuantity(-1) : null,
-                        icon: const Icon(Icons.remove),
+                        onPressed:
+                            _quantity > 1 ? () => _changeQuantity(-1) : null,
+                        icon: const Icon(Icons.remove_rounded),
                       ),
-                      Text('$_quantity', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
+                      SizedBox(
+                        width: 28,
+                        child: Text(
+                          '$_quantity',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.bodyMedium
+                              .copyWith(fontWeight: FontWeight.w800),
+                        ),
+                      ),
                       IconButton(
                         visualDensity: VisualDensity.compact,
-                        onPressed: (_isPreOrderPeriodOpen || _quantity < variant.stok)
-                            ? () => _changeQuantity(1)
-                            : null,
-                        icon: const Icon(Icons.add),
+                        onPressed:
+                            (_isPreOrderPeriodOpen || _quantity < variant.stok)
+                                ? () => _changeQuantity(1)
+                                : null,
+                        icon: const Icon(Icons.add_rounded),
                       ),
                     ],
                   ),
@@ -710,7 +933,8 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: Text('Satuan: ${variant.satuanJual}', style: AppTextStyles.bodySmall),
+                  child: Text('Satuan: ${variant.satuanJual}',
+                      style: AppTextStyles.bodySmall),
                 ),
               ),
             if (_purchaseMessage.isNotEmpty)
@@ -727,14 +951,45 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                   style: const TextStyle(color: AppColors.error, fontSize: 12),
                 ),
               ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _canAddToCart ? () => _buyNow(preOrder: false) : null,
-                icon: const Icon(Icons.shopping_bag_outlined),
-                label: const Text('Beli Sekarang'),
+            if (_selectedPrice != null) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Text('Subtotal', style: AppTextStyles.bodyMedium),
+                  const Spacer(),
+                  Text(
+                    _formatRupiah(_selectedPrice!.harga * _quantity),
+                    style: const TextStyle(
+                      fontFamily: AppTextStyles.fontFamily,
+                      color: AppColors.primary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
+            ],
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _canAddToCart ? _addToCart : null,
+                    icon: const Icon(Icons.add_shopping_cart_rounded),
+                    label: const Text('Keranjang'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        _canAddToCart ? () => _buyNow(preOrder: false) : null,
+                    icon: const Icon(Icons.shopping_bag_outlined),
+                    label: const Text('Beli Sekarang'),
+                  ),
+                ),
+              ],
             ),
             FutureBuilder<bool>(
               future: _preOrderCustomerEligibilityFuture,
@@ -744,47 +999,57 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                 }
 
                 return Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(top: 14),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.07),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.secondary.withValues(alpha: 0.20)),
+                    color: AppColors.secondarySoft,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                        color: AppColors.secondary.withValues(alpha: 0.25)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.event_available, color: AppColors.secondary, size: 19),
+                          const Icon(Icons.event_available,
+                              color: AppColors.secondary, size: 19),
                           const SizedBox(width: 7),
                           Text(
                             'Tersedia Pre-Order',
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: AppColors.secondary,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       if (variant.tanggalMulaiPreOrder != null)
-                        Text('Mulai: ${_formatDate(variant.tanggalMulaiPreOrder!)}', style: AppTextStyles.bodySmall),
+                        Text(
+                            'Mulai: ${_formatDate(variant.tanggalMulaiPreOrder!)}',
+                            style: AppTextStyles.bodySmall),
                       if (variant.tanggalSelesaiPreOrder != null)
-                        Text('Berakhir: ${_formatDate(variant.tanggalSelesaiPreOrder!)}', style: AppTextStyles.bodySmall),
+                        Text(
+                            'Berakhir: ${_formatDate(variant.tanggalSelesaiPreOrder!)}',
+                            style: AppTextStyles.bodySmall),
                       if (variant.estimasiTersedia != null)
-                        Text('Estimasi tersedia: ${_formatDate(variant.estimasiTersedia!)}', style: AppTextStyles.bodySmall),
+                        Text(
+                            'Estimasi tersedia: ${_formatDate(variant.estimasiTersedia!)}',
+                            style: AppTextStyles.bodySmall),
                       const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: _canPurchasePreOrder ? () => _buyNow(preOrder: true) : null,
+                          onPressed: _canPurchasePreOrder
+                              ? () => _buyNow(preOrder: true)
+                              : null,
                           icon: const Icon(Icons.event_available),
                           label: const Text('Pesan Pre-order'),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
+                      const SizedBox(height: 6),
+                      const Text(
                         'Khusus Toko/Horeca terverifikasi. Pesanan dicatat terpisah dan tidak mengurangi stok reguler.',
                         style: AppTextStyles.bodySmall,
                       ),
@@ -792,15 +1057,6 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                   ),
                 );
               },
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: _canAddToCart ? _addToCart : null,
-                icon: const Icon(Icons.add_shopping_cart),
-                label: const Text('Tambah ke Keranjang'),
-              ),
             ),
           ],
         ],

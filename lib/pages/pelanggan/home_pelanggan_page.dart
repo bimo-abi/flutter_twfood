@@ -105,7 +105,8 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
     );
   }
 
-  // Memberi jarak kiri-kanan untuk bagian yang tidak punya padding sendiri.
+
+  // Memberi jarak kiri-kanan untuk bagian yang tidak scroll menyamping.
   Widget _pad(Widget child) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: child,
@@ -466,30 +467,31 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
               return _pad(_buildErrorPreview('Gagal mengambil data produk.'));
             }
 
-            // Tampilkan semua produk. Kalau mau dibatasi, tambahkan .take(8)
-            final products = (snapshot.data ?? []).toList();
+            final products = (snapshot.data ?? []).take(8).toList();
             if (products.isEmpty) {
               return _pad(_buildEmptyPreview('Belum ada produk tersedia.'));
             }
 
-            // Grid 2 kolom yang turun ke bawah. Scroll-nya ikut ListView halaman
-            // Beranda, jadi grid ini sendiri tidak boleh scroll.
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
-              itemCount: products.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 14,
-                mainAxisSpacing: 18,
-                // Tinggi tiap kartu. Naikkan kalau nama produk terpotong,
-                // turunkan kalau kartu terlalu longgar.
-                mainAxisExtent: 240,
-              ),
-              itemBuilder: (context, index) =>
-                  _buildProductCard(products[index]),
-            );
+            // Produk disusun 2 kolom dan ikut scroll ke bawah bersama halaman.
+            final rows = <Widget>[];
+            for (var i = 0; i < products.length; i += 2) {
+              rows.add(
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildProductCard(products[i])),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: i + 1 < products.length
+                          ? _buildProductCard(products[i + 1])
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              );
+              rows.add(const SizedBox(height: 18));
+            }
+            return _pad(Column(children: rows));
           },
         ),
       ],
@@ -497,27 +499,26 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
   }
 
   // Kartu produk: foto besar, harga di atas foto, nama di bawah.
-  // Lebar mengikuti kolom grid, foto mengisi sisa tinggi kartu.
   Widget _buildProductCard(Product product) {
     final variants = product.varian.where((item) => item.statusAktif).toList();
     final startingPrice = _startingPrice(product);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(24),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProductDetailPage(productId: product.idProduk),
-          ),
-        );
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              width: double.infinity,
+        borderRadius: BorderRadius.circular(24),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProductDetailPage(productId: product.idProduk),
+            ),
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: Container(
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
@@ -578,24 +579,24 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              product.namaProduk,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 13.5,
-                fontWeight: FontWeight.w700,
-                height: 1.25,
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                product.namaProduk,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
     );
   }
 
@@ -840,6 +841,8 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
+      // Cadangan untuk Chrome (web) bila foto terhalang aturan CORS.
+      webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
       errorBuilder: (_, _, _) => _imageFallback(fallbackIcon),
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
