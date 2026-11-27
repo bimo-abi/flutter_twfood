@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../models/product.dart';
 import '../../models/recipe.dart';
 import '../../services/product_service.dart';
-import '../../utils/product_image_url.dart';
 import '../../services/recipe_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -16,6 +15,10 @@ import 'recipe_page.dart';
 import 'cart_page.dart';
 import 'order_history_page.dart';
 import 'notifikasi_page.dart';
+
+// Alamat backend Laravel. Dipakai untuk melengkapi URL foto kalau API
+// hanya mengirim path (contoh: "produk/abc.jpg"). Sesuaikan jika berbeda.
+const String _kBackendUrl = 'http://127.0.0.1:8000';
 
 class HomePelangganPage extends StatefulWidget {
   const HomePelangganPage({super.key});
@@ -102,137 +105,394 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
     );
   }
 
+
+  // Memberi jarak kiri-kanan untuk bagian yang tidak scroll menyamping.
+  Widget _pad(Widget child) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: child,
+      );
+
   Widget _buildHomeContent() {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: AppColors.secondarySoft,
         automaticallyImplyLeading: false,
         titleSpacing: 20,
+        toolbarHeight: 66,
         title: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(11),
+            ClipOval(
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 44,
+                height: 44,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    gradient: AppColors.bannerGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.restaurant_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
               ),
-              child: const Icon(Icons.restaurant_rounded,
-                  color: Colors.white, size: 21),
             ),
-            const SizedBox(width: 10),
-            Text('TWFOOD', style: AppTextStyles.headingMedium),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Selamat datang di',
+                  style: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                ShaderMask(
+                  shaderCallback: (rect) =>
+                      AppColors.bannerGradient.createShader(rect),
+                  child: const Text(
+                    'TWFOOD',
+                    style: TextStyle(
+                      fontFamily: AppTextStyles.fontFamily,
+                      fontSize: 21,
+                      height: 1.15,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'Notifikasi',
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const NotifikasiPage(),
-                ),
-              );
-            },
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.border),
+            ),
+            child: IconButton(
+              tooltip: 'Notifikasi',
+              icon: const Icon(Icons.notifications_none_rounded),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+                );
+              },
+            ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: RefreshIndicator(
-          onRefresh: _refreshHome,
-          color: AppColors.primary,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 30),
-            children: [
-              _buildWelcomeBanner(),
-              const SizedBox(height: 28),
-              _buildProductSection(),
-              const SizedBox(height: 28),
-              _buildRecipeSection(),
-              const SizedBox(height: 28),
-              _buildOutletSection(),
-            ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.secondarySoft, AppColors.background],
+            stops: [0.0, 0.25],
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: RefreshIndicator(
+            onRefresh: _refreshHome,
+            color: AppColors.primary,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 28),
+              children: [
+                _pad(_buildSearchBar()),
+                const SizedBox(height: 16),
+                _pad(_buildHeroBanner()),
+                const SizedBox(height: 14),
+                _pad(_buildMenuStrip()),
+                const SizedBox(height: 32),
+                _buildProductSection(),
+                const SizedBox(height: 30),
+                _buildRecipeSection(),
+                const SizedBox(height: 30),
+                _pad(_buildOutletSection()),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildWelcomeBanner() {
+  Widget _decorCircle(double size, double alpha) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF285C3B), Color(0xFF173D2B)],
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: alpha),
+      ),
+    );
+  }
+
+  // Kolom pencarian: ketuk untuk membuka halaman Produk.
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: AppColors.softShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => setState(() => _selectedIndex = 1),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+            child: Row(
+              children: [
+                const Icon(Icons.search_rounded,
+                    color: AppColors.textSecondary),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Cari produk, misalnya kaldu',
+                    style: TextStyle(
+                      fontFamily: AppTextStyles.fontFamily,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.bannerGradient,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
+      ),
+    );
+  }
+
+  // Banner penuh selebar layar (rata kiri-kanan).
+  Widget _buildHeroBanner() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
           BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
+            color: Color(0x33E31E24),
+            blurRadius: 20,
+            offset: Offset(0, 10),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: Ink(
+          decoration: const BoxDecoration(gradient: AppColors.bannerGradient),
+          child: InkWell(
+            onTap: () => setState(() => _selectedIndex = 1),
+            child: Stack(
+              children: [
+                Positioned(
+                    right: -36, top: -36, child: _decorCircle(150, 0.15)),
+                Positioned(
+                    right: 40, bottom: -56, child: _decorCircle(130, 0.10)),
+                Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: const Text(
+                          'SELAMAT DATANG',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            letterSpacing: 1.2,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+                      const Text(
+                        'Nikmati pilihan\nproduk TWFOOD',
+                        style: TextStyle(
+                          fontFamily: AppTextStyles.fontFamily,
+                          color: Colors.white,
+                          fontSize: 28,
+                          height: 1.15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Temukan produk dan inspirasi resep untuk menemani harimu.',
+                        style: TextStyle(
+                          fontFamily: AppTextStyles.fontFamily,
+                          color: Colors.white.withValues(alpha: 0.92),
+                          fontSize: 13,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(18, 11, 12, 11),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Belanja Sekarang',
+                              style: TextStyle(
+                                fontFamily: AppTextStyles.fontFamily,
+                                color: AppColors.primary,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Satu baris panjang berisi empat pintasan: Resep, Outlet, Pesanan, Keranjang.
+  Widget _buildMenuStrip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppColors.softShadow,
+      ),
+      child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Text(
-              'SELAMAT DATANG',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                letterSpacing: 1.1,
-                fontWeight: FontWeight.w700,
-              ),
+          _stripItem(
+            Icons.menu_book_rounded,
+            'Resep',
+            const Color(0xFFC98A00),
+            AppColors.accentSoft,
+            () => setState(() => _selectedIndex = 4),
+          ),
+          _stripItem(
+            Icons.storefront_rounded,
+            'Outlet',
+            AppColors.primary,
+            AppColors.primarySoft,
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const OutletPage()),
             ),
           ),
-          const SizedBox(height: 15),
-          const Text(
-            'Nikmati pilihan\nproduk TWFOOD',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 25,
-              height: 1.2,
-              fontWeight: FontWeight.w800,
-            ),
+          _stripItem(
+            Icons.receipt_long_rounded,
+            'Pesanan',
+            AppColors.secondary,
+            AppColors.secondarySoft,
+            () => setState(() => _selectedIndex = 2),
           ),
-          const SizedBox(height: 9),
-          Text(
-            'Temukan produk dan inspirasi resep untuk menemani harimu.',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.88),
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 18),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: AppColors.textPrimary,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () => setState(() => _selectedIndex = 1),
-            child: const Text('Jelajahi Produk'),
+          _stripItem(
+            Icons.shopping_cart_rounded,
+            'Keranjang',
+            const Color(0xFF2B2622),
+            const Color(0xFFEFEAE4),
+            () => setState(() => _selectedIndex = 3),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _stripItem(
+    IconData icon,
+    String label,
+    Color warnaIkon,
+    Color warnaLatar,
+    VoidCallback onTap,
+  ) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Column(
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: warnaLatar,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(icon, color: warnaIkon, size: 26),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: AppTextStyles.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -241,10 +501,12 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          title: 'Produk TWFOOD',
-          subtitle: 'Pilihan produk untuk kamu.',
-          onSeeAll: () => setState(() => _selectedIndex = 1),
+        _pad(
+          _buildSectionHeader(
+            title: 'Produk TWFOOD',
+            subtitle: 'Pilihan produk untuk kamu.',
+            onSeeAll: () => setState(() => _selectedIndex = 1),
+          ),
         ),
         const SizedBox(height: 14),
         FutureBuilder<List<Product>>(
@@ -252,40 +514,33 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const SizedBox(
-                height: 205,
+                height: 200,
                 child: Center(
                   child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               );
             }
             if (snapshot.hasError) {
-              return _buildErrorPreview('Gagal mengambil data produk.');
+              return _pad(_buildErrorPreview('Gagal mengambil data produk.'));
             }
 
-            // Beranda menampilkan maksimal empat produk dalam grid dua kolom.
-            final products = (snapshot.data ?? []).take(4).toList();
+            final products = (snapshot.data ?? []).take(8).toList();
             if (products.isEmpty) {
-              return _buildEmptyPreview('Belum ada produk tersedia.');
+              return _pad(_buildEmptyPreview('Belum ada produk tersedia.'));
             }
 
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 650 ? 3 : 2;
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemCount: products.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.68,
-                  ),
-                  itemBuilder: (context, index) =>
-                      _buildProductCard(products[index]),
-                );
-              },
+            // Daftar produk menyamping supaya Beranda terasa hidup.
+            return SizedBox(
+              height: 252,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
+                itemCount: products.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 14),
+                itemBuilder: (context, index) =>
+                    _buildProductCard(products[index]),
+              ),
             );
           },
         ),
@@ -293,15 +548,15 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
     );
   }
 
+  // Kartu produk: foto besar, harga di atas foto, nama di bawah.
   Widget _buildProductCard(Product product) {
     final variants = product.varian.where((item) => item.statusAktif).toList();
     final startingPrice = _startingPrice(product);
 
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(18),
+    return SizedBox(
+      width: 168,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         onTap: () {
           Navigator.push(
             context,
@@ -310,102 +565,87 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
             ),
           );
         },
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.border),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 6,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    _networkImage(
-                      ProductImageUrl.resolve(product.fotoProduk),
-                      fallbackIcon: Icons.fastfood_outlined,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 176,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: AppColors.softShadow,
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _networkImage(
+                    product.fotoProduk,
+                    fallbackIcon: Icons.fastfood_outlined,
+                  ),
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${variants.length} varian',
+                        style: const TextStyle(
+                          color: AppColors.secondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
+                  ),
+                  if (startingPrice != null)
                     Positioned(
-                      top: 9,
-                      left: 9,
+                      left: 10,
+                      bottom: 10,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 5,
+                          horizontal: 11,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.background.withValues(alpha: 0.95),
+                          color: const Color(0xE62B2622),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '${variants.length} varian',
+                          _formatRupiah(startingPrice),
                           style: const TextStyle(
-                            color: AppColors.secondary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
                     ),
-                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                product.namaProduk,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
                 ),
               ),
-              Expanded(
-                flex: 4,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.namaProduk,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          height: 1.25,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (startingPrice != null) ...[
-                        const Text(
-                          'Mulai dari',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 10,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _formatRupiah(startingPrice),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ] else
-                        const Text(
-                          'Lihat pilihan varian',
-                          style: TextStyle(
-                            color: AppColors.secondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -438,10 +678,12 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          title: 'Inspirasi Resep',
-          subtitle: 'Ide sajian dari produk TWFOOD.',
-          onSeeAll: () => setState(() => _selectedIndex = 4),
+        _pad(
+          _buildSectionHeader(
+            title: 'Inspirasi Resep',
+            subtitle: 'Ide sajian dari produk TWFOOD.',
+            onSeeAll: () => setState(() => _selectedIndex = 4),
+          ),
         ),
         const SizedBox(height: 14),
         FutureBuilder<List<Recipe>>(
@@ -449,40 +691,32 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const SizedBox(
-                height: 205,
+                height: 180,
                 child: Center(
                   child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               );
             }
             if (snapshot.hasError) {
-              return _buildErrorPreview('Gagal mengambil data resep.');
+              return _pad(_buildErrorPreview('Gagal mengambil data resep.'));
             }
 
-            // Beranda menampilkan maksimal empat resep dalam grid dua kolom.
-            final recipes = (snapshot.data ?? []).take(4).toList();
+            final recipes = (snapshot.data ?? []).take(6).toList();
             if (recipes.isEmpty) {
-              return _buildEmptyPreview('Belum ada resep tersedia.');
+              return _pad(_buildEmptyPreview('Belum ada resep tersedia.'));
             }
 
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 650 ? 3 : 2;
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemCount: recipes.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.78,
-                  ),
-                  itemBuilder: (context, index) =>
-                      _buildRecipeCard(recipes[index]),
-                );
-              },
+            return SizedBox(
+              height: 200,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
+                itemCount: recipes.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 14),
+                itemBuilder: (context, index) =>
+                    _buildRecipeCard(recipes[index]),
+              ),
             );
           },
         ),
@@ -490,44 +724,51 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
     );
   }
 
+  // Kartu resep: foto penuh dengan judul di atas lapisan gelap.
   Widget _buildRecipeCard(Recipe recipe) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => RecipeDetailPage(recipeId: recipe.idResep),
-            ),
-          );
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.border),
-          ),
+    return SizedBox(
+      width: 236,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: AppColors.softShadow,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
           clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 6,
-                child: SizedBox(
-                  width: double.infinity,
-                  child: _networkImage(
-                    recipe.foto,
-                    fallbackIcon: Icons.menu_book_outlined,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RecipeDetailPage(recipeId: recipe.idResep),
+                ),
+              );
+            },
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _networkImage(
+                  recipe.foto,
+                  fallbackIcon: Icons.menu_book_outlined,
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x00000000), Color(0xCC1A1410)],
+                      stops: [0.35, 1.0],
+                    ),
                   ),
                 ),
-              ),
-              Expanded(
-                flex: 4,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
+                Positioned(
+                  left: 14,
+                  right: 14,
+                  bottom: 14,
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
@@ -535,70 +776,90 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
                           height: 1.25,
                         ),
                       ),
-                      const Spacer(),
-                      const Row(
-                        children: [
-                          Text(
-                            'Lihat resep',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Lihat resep',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 13,
-                            color: AppColors.primary,
-                          ),
-                        ],
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 13,
+                              color: AppColors.textPrimary,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // Ajakan mengunjungi outlet di bagian paling bawah.
   Widget _buildOutletSection() {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.accentSoft, AppColors.secondarySoft],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.6)),
       ),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.20),
-              borderRadius: BorderRadius.circular(14),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: AppColors.softShadow,
             ),
-            child: const Icon(Icons.location_on_outlined,
-                color: AppColors.secondary, size: 25),
+            child: const Icon(
+              Icons.location_on_rounded,
+              color: AppColors.primary,
+              size: 28,
+            ),
           ),
-          const SizedBox(width: 13),
-          Expanded(
+          const SizedBox(width: 14),
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Kunjungi Outlet', style: AppTextStyles.headingSmall),
-                const SizedBox(height: 4),
-                const Text(
+                SizedBox(height: 4),
+                Text(
                   'Lihat alamat dan jam operasional outlet TWFOOD.',
                   style: AppTextStyles.bodySmall,
                 ),
@@ -607,14 +868,18 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
           ),
           IconButton(
             tooltip: 'Lihat outlet',
+            style: IconButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const OutletPage()),
               );
             },
-            icon: const Icon(Icons.arrow_forward_ios_rounded,
-                size: 17, color: AppColors.primary),
+            icon: const Icon(
+              Icons.arrow_forward_rounded,
+              size: 20,
+              color: Colors.white,
+            ),
           ),
         ],
       ),
@@ -629,12 +894,25 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
+        Container(
+          width: 5,
+          height: 38,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [AppColors.primary, AppColors.secondary],
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: AppTextStyles.headingMedium),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Text(subtitle, style: AppTextStyles.bodySmall),
             ],
           ),
@@ -645,10 +923,27 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
             foregroundColor: AppColors.primary,
             padding: const EdgeInsets.symmetric(horizontal: 8),
           ),
-          child: const Text('Lihat semua'),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Lihat semua'),
+              SizedBox(width: 2),
+              Icon(Icons.chevron_right_rounded, size: 18),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  // Melengkapi URL foto: kalau API hanya mengirim path (mis. "produk/a.jpg"),
+  // diubah menjadi "http://.../storage/produk/a.jpg".
+  String _resolveImageUrl(String url) {
+    final u = url.trim();
+    if (u.startsWith('http://') || u.startsWith('https://')) return u;
+    final path = u.startsWith('/') ? u.substring(1) : u;
+    if (path.startsWith('storage/')) return '$_kBackendUrl/$path';
+    return '$_kBackendUrl/storage/$path';
   }
 
   Widget _networkImage(String? url, {required IconData fallbackIcon}) {
@@ -656,13 +951,15 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
       return _imageFallback(fallbackIcon);
     }
     return Image.network(
-      url,
+      _resolveImageUrl(url),
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _imageFallback(fallbackIcon),
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (_, _, _) => _imageFallback(fallbackIcon),
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
         return Container(
-          color: AppColors.background,
+          color: AppColors.primarySoft,
           alignment: Alignment.center,
           child: const SizedBox(
             width: 22,
@@ -677,11 +974,30 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
     );
   }
 
+  // Placeholder bermerek: gradasi lembut dengan logo TWFOOD.
   Widget _imageFallback(IconData icon) {
     return Container(
-      color: AppColors.background,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primarySoft, AppColors.secondarySoft],
+        ),
+      ),
       alignment: Alignment.center,
-      child: Icon(icon, size: 38, color: AppColors.textSecondary),
+      child: Opacity(
+        opacity: 0.85,
+        child: ClipOval(
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: 54,
+            height: 54,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) =>
+                Icon(icon, size: 38, color: AppColors.primary),
+          ),
+        ),
+      ),
     );
   }
 
@@ -691,8 +1007,8 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.7)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
       ),
       child: Text(message, style: AppTextStyles.bodySmall),
     );
@@ -704,7 +1020,7 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(

@@ -22,7 +22,7 @@ class TwfoodApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _TwfoodThemeRoot(child: const SessionGate());
+    return const _TwfoodThemeRoot(child: SessionGate());
   }
 }
 
@@ -60,7 +60,7 @@ class _TwfoodThemeRootState extends State<_TwfoodThemeRoot> {
           debugShowCheckedModeBanner: false,
           title: 'TWFOOD',
           theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
+          darkTheme: AppTheme.lightTheme,
           themeMode: _themeController.themeMode,
           home: widget.child,
         ),
