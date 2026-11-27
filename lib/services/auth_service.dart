@@ -15,8 +15,9 @@ class AuthService {
     required String kataSandiConfirmation,
     required String jenisPelanggan,
     Map<String, dynamic>? profilBisnis,
+    Map<String, String> dokumen = const {},
   }) {
-    final Map<String, dynamic> body = {
+    final Map<String, String> fields = {
       'nama': nama,
       'email': email,
       'nomor_telepon': nomorTelepon,
@@ -26,13 +27,31 @@ class AuthService {
     };
 
     if (profilBisnis != null) {
-      body['profil_bisnis'] = profilBisnis;
+      for (final entry in profilBisnis.entries) {
+        if (entry.value != null) {
+          fields['profil_bisnis[${entry.key}]'] = entry.value.toString();
+        }
+      }
     }
 
-    return ApiService.post('/register', body: body);
+    if (jenisPelanggan == 'umum') {
+      return ApiService.post('/register', body: {
+        'nama': nama,
+        'email': email,
+        'nomor_telepon': nomorTelepon,
+        'kata_sandi': kataSandi,
+        'kata_sandi_confirmation': kataSandiConfirmation,
+        'jenis_pelanggan': jenisPelanggan,
+      });
+    }
+
+    return ApiService.multipartPublic(
+      '/register',
+      fields: fields,
+      filePaths: dokumen,
+    );
   }
 
-  // ============================================================
   // LOGIN
   // ============================================================
 

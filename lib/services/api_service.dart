@@ -48,8 +48,15 @@ class ApiService {
   }
 
   // GET PUBLIC
-  static Future<http.Response> get(String endpoint) {
-    return _client.get(_url(endpoint), headers: {'Accept': 'application/json'});
+  static Future<http.Response> get(String endpoint) async {
+    final headers = <String, String>{'Accept': 'application/json'};
+    // Token opsional: endpoint katalog tetap publik, tetapi harga grosir
+    // hanya dikirim Laravel untuk akun Toko/Horeca yang telah disetujui.
+    final token = await TokenStorage.getToken();
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return _client.get(_url(endpoint), headers: headers);
   }
 
   // POST PUBLIC
@@ -62,6 +69,26 @@ class ApiService {
       headers: _publicHeaders,
       body: body == null ? null : jsonEncode(body),
     );
+  }
+
+  // MULTIPART PUBLIC untuk registrasi yang menyertakan dokumen.
+  static Future<http.Response> multipartPublic(
+    String endpoint, {
+    required Map<String, String> fields,
+    required Map<String, String> filePaths,
+  }) async {
+    final request = http.MultipartRequest('POST', _url(endpoint));
+    request.headers['Accept'] = 'application/json';
+    request.fields.addAll(fields);
+
+    for (final entry in filePaths.entries) {
+      request.files.add(
+        await http.MultipartFile.fromPath(entry.key, entry.value),
+      );
+    }
+
+    final streamed = await _client.send(request);
+    return http.Response.fromStream(streamed);
   }
 
   // MULTIPART AUTHENTICATED (unggah foto/file ke API Laravel).
