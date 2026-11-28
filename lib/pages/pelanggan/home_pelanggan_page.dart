@@ -54,19 +54,33 @@ class _HomePelangganPageState extends State<HomePelangganPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Di layar lebar (Chrome layar penuh) isi dibatasi selebar HP supaya
+    // tampilannya sama seperti di Android dan tidak melebar.
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          _buildHomeContent(),
-          const ProductPage(),
-          const OrderHistoryPage(),
-          const CartPage(),
-          const RecipePage(),
-          const ProfilePage(),
-        ],
+      backgroundColor: const Color(0xFFEFE8DD),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(
+            children: [
+              Expanded(
+                child: IndexedStack(
+                  index: _selectedIndex,
+                  children: [
+                    _buildHomeContent(),
+                    const ProductPage(),
+                    const OrderHistoryPage(),
+                    const CartPage(),
+                    const RecipePage(),
+                    const ProfilePage(),
+                  ],
+                ),
+              ),
+              _buildBottomNav(),
+            ],
+          ),
+        ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
