@@ -697,7 +697,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildOrderSummary(List<CartItem> items) {
-    final subtotal = items.fold<int>(0, (total, item) => total + item.subtotal);
+    final subtotal = items.fold<int>(
+      0,
+      (total, item) => total + item.subtotalSetelahDiskon,
+    );
+    final totalDiskon = items.fold<int>(
+      0,
+      (total, item) => total + item.diskonItem,
+    );
 
     return _CheckoutCard(
       child: Padding(
@@ -726,11 +733,35 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     ),
                     const SizedBox(width: 8),
                     Flexible(
-                      child: Text(
-                        _rupiah(item.subtotal),
-                        textAlign: TextAlign.end,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                        softWrap: true,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (item.diskonItem > 0)
+                            Text(
+                              _rupiah(item.subtotal),
+                              textAlign: TextAlign.end,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          Text(
+                            _rupiah(item.subtotalSetelahDiskon),
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            softWrap: true,
+                          ),
+                          if (item.diskonItem > 0)
+                            Text(
+                              'Diskon ${item.variant.campaignAktif!.nilaiPersen}%',
+                              textAlign: TextAlign.end,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppColors.success,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ],
@@ -738,11 +769,27 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
             ),
             const Divider(),
+            if (totalDiskon > 0) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Total diskon Campaign'),
+                  Text(
+                    '-${_rupiah(totalDiskon)}',
+                    style: const TextStyle(
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Subtotal sementara',
+                  'Subtotal setelah diskon (estimasi)',
                   style: TextStyle(fontWeight: FontWeight.w700),
                 ),
                 Text(

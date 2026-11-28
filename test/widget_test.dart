@@ -19,9 +19,9 @@ void main() {
     await tester.pumpWidget(const TwfoodApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Login TWFOOD'), findsOneWidget);
-    expect(find.text('Selamat Datang'), findsOneWidget);
-    expect(find.text('LOGIN'), findsOneWidget);
+    expect(find.text('Masuk'), findsOneWidget);
+    expect(find.text('Selamat datang kembali di TWFOOD.'), findsOneWidget);
+    expect(find.text('MASUK'), findsOneWidget);
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_secureStorageChannel, null);

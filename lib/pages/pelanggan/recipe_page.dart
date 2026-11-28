@@ -408,19 +408,6 @@ class _RecipePageState extends State<RecipePage> {
       ),
     );
   }
-
-  String _buildRecipePreview(Recipe recipe) {
-    if (recipe.langkahPembuatan != null &&
-        recipe.langkahPembuatan!.isNotEmpty) {
-      return recipe.langkahPembuatan!;
-    }
-
-    if (recipe.bahan != null && recipe.bahan!.isNotEmpty) {
-      return recipe.bahan!;
-    }
-
-    return 'Belum ada informasi bahan atau langkah pembuatan.';
-  }
 }
 
 // Bentuk gelombang lembut untuk bagian bawah header.

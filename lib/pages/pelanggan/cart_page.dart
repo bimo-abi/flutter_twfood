@@ -370,11 +370,33 @@ class _CartPageState extends State<CartPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Subtotal', style: AppTextStyles.bodyMedium),
-              Text(
-                _rupiah(item.subtotal),
-                style: AppTextStyles.headingSmall.copyWith(
-                  color: AppColors.primary,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (item.diskonItem > 0)
+                    Text(
+                      _rupiah(item.subtotal),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        decoration: TextDecoration.lineThrough,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  Text(
+                    _rupiah(item.subtotalSetelahDiskon),
+                    style: AppTextStyles.headingSmall.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  if (item.diskonItem > 0)
+                    Text(
+                      'Campaign ${item.variant.campaignAktif!.nilaiPersen}% • Hemat ${_rupiah(item.diskonItem)}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
