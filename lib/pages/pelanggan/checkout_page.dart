@@ -696,6 +696,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Widget _buildOrderSummary(List<CartItem> items) {
     final subtotal = items.fold<int>(0, (total, item) => total + item.subtotal);
+    final diskon = items.fold<int>(0, (total, item) => total + item.diskonItem);
+    final estimasiTotal = subtotal - diskon;
 
     return Card(
       color: AppColors.surface,
@@ -730,10 +732,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     ),
                     const SizedBox(width: 8),
                     Flexible(
-                      child: Text(
-                        'Rp ${item.subtotal}',
-                        textAlign: TextAlign.end,
-                        softWrap: true,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (item.diskonItem > 0)
+                            Text('−Rp ${item.diskonItem}', style: const TextStyle(color: AppColors.success, fontSize: 12)),
+                          Text('Rp ${item.subtotalSetelahDiskon}', textAlign: TextAlign.end, softWrap: true),
+                        ],
                       ),
                     ),
                   ],
@@ -754,6 +759,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
               ],
             ),
+            if (diskon > 0) ...[
+              const SizedBox(height: 6),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Text('Diskon Campaign'),
+                Text('−Rp $diskon', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w700)),
+              ]),
+            ],
+            const SizedBox(height: 6),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text('Estimasi total', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Rp $estimasiTotal', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ]),
             const SizedBox(height: 6),
             const Text(
               'Nominal final dihitung ulang oleh Laravel saat pesanan dibuat.',

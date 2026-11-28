@@ -499,6 +499,22 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
     return 'Rp $buffer';
   }
 
+  CampaignDiscount? get _campaignAktif {
+    final campaign = widget.variant.campaignAktif;
+    if (campaign == null) return null;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final mulai = campaign.tanggalMulai == null
+        ? null
+        : DateTime(campaign.tanggalMulai!.year, campaign.tanggalMulai!.month, campaign.tanggalMulai!.day);
+    final selesai = campaign.tanggalSelesai == null
+        ? null
+        : DateTime(campaign.tanggalSelesai!.year, campaign.tanggalSelesai!.month, campaign.tanggalSelesai!.day);
+    if ((mulai != null && today.isBefore(mulai)) ||
+        (selesai != null && today.isAfter(selesai))) return null;
+    return campaign;
+  }
+
   bool get _isWholesale => _selectedPrice?.jenisHarga.toLowerCase() == 'grosir';
 
   // Validasi konversi satuan dibuat konservatif.
@@ -843,17 +859,21 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          _formatRupiah(price.harga),
-                          style: TextStyle(
-                            fontFamily: AppTextStyles.fontFamily,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: selected
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
+                        if (price.jenisHarga == 'ecer' && _campaignAktif != null) ...[
+                          Text(
+                            _formatRupiah(price.harga),
+                            style: const TextStyle(decoration: TextDecoration.lineThrough, fontSize: 11, color: AppColors.textSecondary),
                           ),
-                        ),
+                          Text(
+                            _formatRupiah(price.harga - (price.harga * _campaignAktif!.nilaiPersen / 100 + 0.5).floor()),
+                            style: TextStyle(fontFamily: AppTextStyles.fontFamily, fontSize: 15, fontWeight: FontWeight.w800, color: selected ? AppColors.primary : AppColors.success),
+                          ),
+                          Text('Diskon ${_campaignAktif!.nilaiPersen.toStringAsFixed(_campaignAktif!.nilaiPersen % 1 == 0 ? 0 : 2)}%', style: const TextStyle(fontSize: 10, color: AppColors.success)),
+                        ] else
+                          Text(
+                            _formatRupiah(price.harga),
+                            style: TextStyle(fontFamily: AppTextStyles.fontFamily, fontSize: 15, fontWeight: FontWeight.w800, color: selected ? AppColors.primary : AppColors.textPrimary),
+                          ),
                       ],
                     ),
                   ),
@@ -958,7 +978,7 @@ class _VariantPurchaseCardState extends State<_VariantPurchaseCard> {
                   const Text('Subtotal', style: AppTextStyles.bodyMedium),
                   const Spacer(),
                   Text(
-                    _formatRupiah(_selectedPrice!.harga * _quantity),
+                    _formatRupiah((_selectedPrice!.harga - (_selectedPrice!.jenisHarga == 'ecer' && _campaignAktif != null ? (_selectedPrice!.harga * _campaignAktif!.nilaiPersen / 100 + 0.5).floor() : 0)) * _quantity),
                     style: const TextStyle(
                       fontFamily: AppTextStyles.fontFamily,
                       color: AppColors.primary,

@@ -43,6 +43,36 @@ void main() {
       expect(product.varian.single.daftarHarga[1].statusAktif, isFalse);
     });
 
+    test('membaca informasi Campaign aktif pada varian', () {
+      final product = Product.fromJson({
+        'id_produk': 3,
+        'nama_produk': 'Jamur Crispy',
+        'status_aktif': true,
+        'varian': [
+          {
+            'id_varian': 30,
+            'id_produk': 3,
+            'nama_varian': '100 gram',
+            'stok': 10,
+            'tersedia_pre_order': false,
+            'status_aktif': true,
+            'campaign_aktif': {
+              'id_promosi': 7,
+              'nama_promosi': 'Promo Akhir Tahun',
+              'nilai_persen': 15,
+              'tanggal_mulai': '2026-11-28',
+              'tanggal_selesai': '2026-12-31',
+            },
+            'daftar_harga': [],
+          },
+        ],
+      });
+
+      expect(product.varian.single.campaignAktif?.idPromosi, 7);
+      expect(product.varian.single.campaignAktif?.nilaiPersen, 15);
+      expect(product.varian.single.campaignAktif?.namaPromosi, 'Promo Akhir Tahun');
+    });
+
     test('status selain true atau 1 dianggap nonaktif', () {
       final product = Product.fromJson({
         'id_produk': 2,

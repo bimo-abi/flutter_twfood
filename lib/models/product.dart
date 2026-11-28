@@ -74,6 +74,7 @@ class ProductVariant {
   final DateTime? estimasiTersedia;
   final bool statusAktif;
   final List<ProductPrice> daftarHarga;
+  final CampaignDiscount? campaignAktif;
 
   const ProductVariant({
     required this.idVarian,
@@ -88,6 +89,7 @@ class ProductVariant {
     this.estimasiTersedia,
     required this.statusAktif,
     required this.daftarHarga,
+    this.campaignAktif,
   });
 
   factory ProductVariant.fromJson(Map<String, dynamic> json) {
@@ -119,6 +121,9 @@ class ProductVariant {
       estimasiTersedia: _parseDateTime(json['estimasi_tersedia']),
       statusAktif: _parseBool(json['status_aktif']),
       daftarHarga: daftarHarga,
+      campaignAktif: json['campaign_aktif'] is Map
+          ? CampaignDiscount.fromJson(Map<String, dynamic>.from(json['campaign_aktif'] as Map))
+          : null,
     );
   }
 
@@ -136,6 +141,7 @@ class ProductVariant {
       'estimasi_tersedia': estimasiTersedia?.toIso8601String(),
       'status_aktif': statusAktif,
       'daftar_harga': daftarHarga.map((item) => item.toJson()).toList(),
+      'campaign_aktif': campaignAktif?.toJson(),
     };
   }
 
@@ -197,4 +203,27 @@ class ProductPrice {
     if (value == null) return null;
     return int.tryParse(value.toString());
   }
+}
+
+class CampaignDiscount {
+  final int idPromosi;
+  final String namaPromosi;
+  final double nilaiPersen;
+  final DateTime? tanggalMulai;
+  final DateTime? tanggalSelesai;
+
+  const CampaignDiscount({required this.idPromosi, required this.namaPromosi, required this.nilaiPersen, this.tanggalMulai, this.tanggalSelesai});
+
+  factory CampaignDiscount.fromJson(Map<String, dynamic> json) => CampaignDiscount(
+    idPromosi: int.tryParse(json['id_promosi'].toString()) ?? 0,
+    namaPromosi: json['nama_promosi']?.toString() ?? '',
+    nilaiPersen: double.tryParse(json['nilai_persen'].toString()) ?? 0,
+    tanggalMulai: DateTime.tryParse(json['tanggal_mulai']?.toString() ?? ''),
+    tanggalSelesai: DateTime.tryParse(json['tanggal_selesai']?.toString() ?? ''),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id_promosi': idPromosi, 'nama_promosi': namaPromosi, 'nilai_persen': nilaiPersen,
+    'tanggal_mulai': tanggalMulai?.toIso8601String(), 'tanggal_selesai': tanggalSelesai?.toIso8601String(),
+  };
 }
