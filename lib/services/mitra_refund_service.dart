@@ -63,6 +63,18 @@ class MitraRefundService {
     return MitraRefund.fromJson(Map<String, dynamic>.from(decoded['data']));
   }
 
+  static Future<String> submitAutomatic({required int idRefund}) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/mitra/refund/$idRefund/otomatis'),
+      headers: await _headers(),
+    );
+    final decoded = _decode(response.body);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(_message(decoded, 'Gagal mengajukan refund otomatis.'));
+    }
+    return _message(decoded, 'Permintaan refund otomatis diproses.');
+  }
+
   static Future<void> submitManual({
     required int idRefund,
     required String hasil,
