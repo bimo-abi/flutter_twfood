@@ -34,6 +34,7 @@ flutter:
 
   assets:
     - assets/images/logo.png
+    - assets/images/jamur_hias.png
 
   # Font Plus Jakarta Sans (file ada di assets/fonts/).
   # Nama family harus sama dengan AppTextStyles.fontFamily.

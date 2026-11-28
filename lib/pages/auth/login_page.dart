@@ -384,171 +384,26 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Masuk'),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Container(
-                      width: 76,
-                      height: 76,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: const Icon(
-                        Icons.restaurant_menu_rounded,
-                        color: Colors.white,
-                        size: 42,
-                      ),
+      backgroundColor: AppColors.surface,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Container(
+            color: AppColors.surface,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeader(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+                    child: Form(
+                      key: _formKey,
+                      child: _buildFormContent(),
                     ),
-                    const SizedBox(height: 22),
-                    Text(
-                      'Selamat Datang',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.headingLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Masuk ke akun TWFOOD untuk melanjutkan belanja.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    Card(
-                      color: AppColors.surface,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text('Login', style: AppTextStyles.headingSmall),
-                            const SizedBox(height: 18),
-                            TextFormField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                hintText: 'Masukkan email terdaftar',
-                                prefixIcon: Icon(Icons.email_outlined),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty)
-                                  return 'Email wajib diisi.';
-                                final emailRegex = RegExp(
-                                  r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                                );
-                                if (!emailRegex.hasMatch(value.trim()))
-                                  return 'Format email tidak valid.';
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              textInputAction: TextInputAction.done,
-                              onFieldSubmitted: (_) => _submitForm(),
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                                hintText: 'Masukkan password',
-                                prefixIcon: const Icon(Icons.lock_outline),
-                                suffixIcon: IconButton(
-                                  tooltip: _obscurePassword
-                                      ? 'Tampilkan password'
-                                      : 'Sembunyikan password',
-                                  icon: Icon(
-                                    _obscurePassword
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                  ),
-                                  onPressed: () => setState(
-                                    () => _obscurePassword = !_obscurePassword,
-                                  ),
-                                ),
-                              ),
-                              validator: (value) =>
-                                  value == null || value.isEmpty
-                                  ? 'Password wajib diisi.'
-                                  : null,
-                            ),
-                            const SizedBox(height: 12),
-                            CheckboxListTile(
-                              contentPadding: EdgeInsets.zero,
-                              controlAffinity: ListTileControlAffinity.leading,
-                              title: const Text('Ingat saya'),
-                              subtitle: const Text(
-                                'Simpan email dan password di perangkat ini.',
-                              ),
-                              value: _rememberMe,
-                              onChanged: _rememberMeLoaded && !_isLoading
-                                  ? (value) {
-                                      setState(() {
-                                        _rememberMe = value ?? false;
-                                      });
-                                    }
-                                  : null,
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 52,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _submitForm,
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        height: 22,
-                                        width: 22,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : const Text('MASUK'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Belum punya akun?',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _goToRegister,
-                          child: const Text('Daftar sekarang'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -556,4 +411,285 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+
+  // Bagian atas sederhana: dua lapis gelombang kuning lembut dan logo.
+  Widget _buildHeader() {
+    return SizedBox(
+      height: 300,
+      child: Stack(
+        children: [
+          ClipPath(
+            clipper: _WaveClipper(back: true),
+            child: Container(height: 300, color: AppColors.secondarySoft),
+          ),
+          ClipPath(
+            clipper: _WaveClipper(),
+            child: Container(
+              height: 262,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFFD79A), Color(0xFFFFE9C9)],
+                ),
+              ),
+            ),
+          ),
+          // Ilustrasi berbagai jamur (shiitake, tiram, enoki, kancing, king oyster)
+          // di kiri dan kanan logo. File: assets/images/jamur_hias.png
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 40,
+            child: IgnorePointer(
+              child: Image.asset(
+                'assets/images/jamur_hias.png',
+                fit: BoxFit.fitWidth,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Stack(
+              children: [
+                if (Navigator.of(context).canPop())
+                  Positioned(
+                    left: 12,
+                    top: 8,
+                    child: Material(
+                      color: Colors.white,
+                      shape: const CircleBorder(),
+                      child: IconButton(
+                        tooltip: 'Kembali',
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.arrow_back_rounded,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                Align(
+                  alignment: const Alignment(0, -0.2),
+                  child: Container(
+                    width: 108,
+                    height: 108,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.22),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const Icon(
+                          Icons.restaurant_rounded,
+                          color: AppColors.primary,
+                          size: 50,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Masuk',
+          style: TextStyle(
+            fontFamily: AppTextStyles.fontFamily,
+            color: AppColors.textPrimary,
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Selamat datang kembali di TWFOOD.',
+          style: AppTextStyles.bodyMedium,
+        ),
+        const SizedBox(height: 24),
+        TextFormField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          decoration: _fieldDecoration(
+            label: 'Email',
+            hint: 'Masukkan email terdaftar',
+            icon: Icons.email_outlined,
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Email wajib diisi.';
+            }
+            final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+            if (!emailRegex.hasMatch(value.trim())) {
+              return 'Format email tidak valid.';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _passwordController,
+          obscureText: _obscurePassword,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _submitForm(),
+          decoration: _fieldDecoration(
+            label: 'Password',
+            hint: 'Masukkan password',
+            icon: Icons.lock_outline_rounded,
+            suffix: IconButton(
+              tooltip: _obscurePassword
+                  ? 'Tampilkan password'
+                  : 'Sembunyikan password',
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                color: AppColors.textSecondary,
+              ),
+              onPressed: () => setState(
+                () => _obscurePassword = !_obscurePassword,
+              ),
+            ),
+          ),
+          validator: (value) =>
+              value == null || value.isEmpty ? 'Password wajib diisi.' : null,
+        ),
+        const SizedBox(height: 6),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          activeColor: AppColors.primary,
+          controlAffinity: ListTileControlAffinity.leading,
+          title: const Text(
+            'Ingat saya',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          subtitle: const Text(
+            'Simpan email dan password di perangkat ini.',
+            style: TextStyle(fontSize: 11.5),
+          ),
+          value: _rememberMe,
+          onChanged: _rememberMeLoaded && !_isLoading
+              ? (value) {
+                  setState(() {
+                    _rememberMe = value ?? false;
+                  });
+                }
+              : null,
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: 54,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _submitForm,
+            child: _isLoading
+                ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('MASUK'),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Belum punya akun?',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            TextButton(
+              onPressed: _goToRegister,
+              child: const Text(
+                'Daftar sekarang',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _fieldDecoration({
+    required String label,
+    required String hint,
+    required IconData icon,
+    Widget? suffix,
+  }) {
+    OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: color, width: width),
+        );
+
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(icon, color: AppColors.textSecondary),
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: AppColors.background,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      border: border(Colors.transparent, 0),
+      enabledBorder: border(AppColors.border, 1),
+      focusedBorder: border(AppColors.primary, 1.6),
+      errorBorder: border(AppColors.error, 1),
+      focusedErrorBorder: border(AppColors.error, 1.6),
+    );
+  }
+}
+
+// Bentuk gelombang untuk bagian atas halaman masuk/daftar.
+class _WaveClipper extends CustomClipper<Path> {
+  final bool back;
+
+  _WaveClipper({this.back = false});
+
+  @override
+  Path getClip(Size size) {
+    final h = size.height;
+    final w = size.width;
+    final path = Path()..lineTo(0, h - 55);
+    if (back) {
+      path.quadraticBezierTo(w * 0.30, h + 5, w * 0.62, h - 35);
+      path.quadraticBezierTo(w * 0.85, h - 62, w, h - 18);
+    } else {
+      path.quadraticBezierTo(w * 0.25, h + 8, w * 0.52, h - 28);
+      path.quadraticBezierTo(w * 0.80, h - 62, w, h - 22);
+    }
+    path
+      ..lineTo(w, 0)
+      ..close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }

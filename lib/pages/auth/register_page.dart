@@ -284,25 +284,26 @@ class _RegisterPageState extends State<RegisterPage> {
     required String labelText,
     required IconData icon,
     String? hintText,
+    Widget? suffixIcon,
   }) {
+    OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: color, width: width),
+        );
+
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,
       prefixIcon: Icon(icon, color: AppColors.textSecondary),
+      suffixIcon: suffixIcon,
       filled: true,
-      fillColor: AppColors.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-      ),
+      fillColor: AppColors.background,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      border: border(Colors.transparent, 0),
+      enabledBorder: border(AppColors.border, 1),
+      focusedBorder: border(AppColors.primary, 1.6),
+      errorBorder: border(AppColors.error, 1),
+      focusedErrorBorder: border(AppColors.error, 1.6),
     );
   }
 
@@ -545,331 +546,278 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Buat Akun'),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.person_add_alt_1_rounded,
-                        color: Colors.white,
-                        size: 34,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Bergabung dengan TWFOOD',
-                      style: AppTextStyles.headingLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Buat akun pelanggan untuk mulai menikmati produk kami.',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    Card(
-                      color: AppColors.surface,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              'Informasi Akun',
-                              style: AppTextStyles.headingSmall,
+      backgroundColor: AppColors.surface,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Container(
+            color: AppColors.surface,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeader(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 6, 24, 28),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'Buat Akun',
+                            style: TextStyle(
+                              fontFamily: AppTextStyles.fontFamily,
+                              color: AppColors.textPrimary,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
                             ),
-                            const SizedBox(height: 18),
-                            // DATA DASAR
-                            TextFormField(
-                              controller: _namaController,
-                              keyboardType: TextInputType.name,
-                              decoration: _inputDecoration(
-                                labelText: 'Nama',
-                                hintText: 'Masukkan nama lengkap',
-                                icon: Icons.person_outline,
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Bergabung dengan TWFOOD dan mulai belanja produk pilihan.',
+                            style: AppTextStyles.bodyMedium,
+                          ),
+                          const SizedBox(height: 24),
+
+                          // DATA DASAR
+                          TextFormField(
+                            controller: _namaController,
+                            keyboardType: TextInputType.name,
+                            decoration: _inputDecoration(
+                              labelText: 'Nama',
+                              hintText: 'Masukkan nama lengkap',
+                              icon: Icons.person_outline,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nama wajib diisi.';
+                              }
+
+                              return null;
+                            },
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: _inputDecoration(
+                              labelText: 'Email',
+                              hintText: 'Masukkan email',
+                              icon: Icons.email_outlined,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Email wajib diisi.';
+                              }
+
+                              final emailRegex = RegExp(
+                                r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                              );
+
+                              if (!emailRegex.hasMatch(value.trim())) {
+                                return 'Format email tidak valid.';
+                              }
+
+                              return null;
+                            },
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          TextFormField(
+                            controller: _nomorTeleponController,
+                            keyboardType: TextInputType.phone,
+                            decoration: _inputDecoration(
+                              labelText: 'Nomor Telepon',
+                              hintText: 'Masukkan nomor telepon',
+                              icon: Icons.phone_outlined,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nomor telepon wajib diisi.';
+                              }
+
+                              return null;
+                            },
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            decoration: _inputDecoration(
+                              labelText: 'Password',
+                              hintText: 'Masukkan password',
+                              icon: Icons.lock_outline_rounded,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: AppColors.textSecondary,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
                               ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Nama wajib diisi.';
-                                }
-
-                                return null;
-                              },
                             ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Password wajib diisi.';
+                              }
 
-                            const SizedBox(height: 16),
+                              if (value.length < 8) {
+                                return 'Password minimal 8 karakter.';
+                              }
 
-                            TextFormField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: _inputDecoration(
-                                labelText: 'Email',
-                                hintText: 'Masukkan email',
-                                icon: Icons.email_outlined,
+                              return null;
+                            },
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          TextFormField(
+                            controller: _konfirmasiPasswordController,
+                            obscureText: _obscureKonfirmasiPassword,
+                            decoration: _inputDecoration(
+                              labelText: 'Konfirmasi Password',
+                              hintText: 'Ulangi password',
+                              icon: Icons.lock_outline_rounded,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureKonfirmasiPassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: AppColors.textSecondary,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscureKonfirmasiPassword =
+                                        !_obscureKonfirmasiPassword;
+                                  });
+                                },
                               ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Email wajib diisi.';
-                                }
-
-                                final emailRegex = RegExp(
-                                  r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                                );
-
-                                if (!emailRegex.hasMatch(value.trim())) {
-                                  return 'Format email tidak valid.';
-                                }
-
-                                return null;
-                              },
                             ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Konfirmasi password wajib diisi.';
+                              }
 
-                            const SizedBox(height: 16),
+                              if (value != _passwordController.text) {
+                                return 'Konfirmasi password tidak sama.';
+                              }
 
-                            TextFormField(
-                              controller: _nomorTeleponController,
-                              keyboardType: TextInputType.phone,
-                              decoration: _inputDecoration(
-                                labelText: 'Nomor Telepon',
-                                hintText: 'Masukkan nomor telepon',
-                                icon: Icons.phone_outlined,
+                              return null;
+                            },
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // JENIS PELANGGAN
+                          DropdownButtonFormField<String>(
+                            initialValue: _jenisPelanggan,
+                            decoration: _inputDecoration(
+                              labelText: 'Jenis Pelanggan',
+                              icon: Icons.category_outlined,
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'umum',
+                                child: Text('Umum'),
                               ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Nomor telepon wajib diisi.';
-                                }
-
-                                return null;
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                                hintText: 'Masukkan password',
-                                prefixIcon: const Icon(Icons.lock_outline),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                                ),
-                                filled: true,
-                                fillColor: AppColors.surface,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.border,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.border,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.primary,
-                                    width: 1.5,
-                                  ),
-                                ),
+                              DropdownMenuItem(
+                                value: 'toko',
+                                child: Text('Toko'),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Password wajib diisi.';
-                                }
-
-                                if (value.length < 8) {
-                                  return 'Password minimal 8 karakter.';
-                                }
-
-                                return null;
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            TextFormField(
-                              controller: _konfirmasiPasswordController,
-                              obscureText: _obscureKonfirmasiPassword,
-                              decoration: InputDecoration(
-                                labelText: 'Konfirmasi Password',
-                                hintText: 'Ulangi password',
-                                prefixIcon: const Icon(Icons.lock_outline),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscureKonfirmasiPassword
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _obscureKonfirmasiPassword =
-                                          !_obscureKonfirmasiPassword;
-                                    });
-                                  },
-                                ),
-                                filled: true,
-                                fillColor: AppColors.surface,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.border,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.border,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.primary,
-                                    width: 1.5,
-                                  ),
-                                ),
+                              DropdownMenuItem(
+                                value: 'horeca',
+                                child: Text('Horeca'),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Konfirmasi password wajib diisi.';
-                                }
+                            ],
+                            onChanged: (value) {
+                              if (value == null) {
+                                return;
+                              }
 
-                                if (value != _passwordController.text) {
-                                  return 'Konfirmasi password tidak sama.';
-                                }
+                              setState(() {
+                                _jenisPelanggan = value;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Jenis pelanggan wajib dipilih.';
+                              }
 
-                                return null;
-                              },
+                              return null;
+                            },
+                          ),
+
+                          // PROFIL BISNIS
+                          _buildProfileBisnisSection(),
+
+                          const SizedBox(height: 28),
+
+                          SizedBox(
+                            height: 54,
+                            child: ElevatedButton(
+                              onPressed: _sedangMengirim ? null : _submitForm,
+                              child: _sedangMengirim
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'DAFTAR',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
-
-                            const SizedBox(height: 16),
-
-                            // JENIS PELANGGAN
-                            DropdownButtonFormField<String>(
-                              initialValue: _jenisPelanggan,
-                              decoration: InputDecoration(
-                                labelText: 'Jenis Pelanggan',
-                                prefixIcon: const Icon(Icons.category_outlined),
-                                filled: true,
-                                fillColor: AppColors.surface,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.border,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.border,
-                                  ),
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Sudah punya akun?',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'umum',
-                                  child: Text('Umum'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'toko',
-                                  child: Text('Toko'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'horeca',
-                                  child: Text('Horeca'),
-                                ),
-                              ],
-                              onChanged: (value) {
-                                if (value == null) {
-                                  return;
-                                }
-
-                                setState(() {
-                                  _jenisPelanggan = value;
-                                });
-                              },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Jenis pelanggan wajib dipilih.';
-                                }
-
-                                return null;
-                              },
-                            ),
-
-                            // PROFIL BISNIS
-                            _buildProfileBisnisSection(),
-
-                            const SizedBox(height: 28),
-
-                            SizedBox(
-                              height: 52,
-                              child: ElevatedButton(
-                                onPressed: _sedangMengirim ? null : _submitForm,
+                              TextButton(
+                                onPressed: _sedangMengirim
+                                    ? null
+                                    : () => Navigator.pop(context),
                                 child: const Text(
-                                  'DAFTAR',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  'Masuk',
+                                  style: TextStyle(fontWeight: FontWeight.w800),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Dengan mendaftar, data akun akan diproses sesuai ketentuan TWFOOD.',
+                            style: AppTextStyles.bodySmall,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Dengan mendaftar, data akun akan diproses sesuai ketentuan TWFOOD.',
-                      style: AppTextStyles.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -877,4 +825,125 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
   }
+
+  // Bagian atas: gelombang peach, ilustrasi jamur, dan logo (sama seperti halaman masuk).
+  Widget _buildHeader() {
+    return SizedBox(
+      height: 250,
+      child: Stack(
+        children: [
+          ClipPath(
+            clipper: _WaveClipper(back: true),
+            child: Container(height: 250, color: AppColors.secondarySoft),
+          ),
+          ClipPath(
+            clipper: _WaveClipper(),
+            child: Container(
+              height: 214,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFFD79A), Color(0xFFFFE9C9)],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 30,
+            child: IgnorePointer(
+              child: Image.asset(
+                'assets/images/jamur_hias.png',
+                fit: BoxFit.fitWidth,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 12,
+                  top: 8,
+                  child: Material(
+                    color: Colors.white,
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      tooltip: 'Kembali',
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: const Alignment(0, -0.45),
+                  child: Container(
+                    width: 92,
+                    height: 92,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.22),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const Icon(
+                          Icons.restaurant_rounded,
+                          color: AppColors.primary,
+                          size: 44,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Bentuk gelombang untuk bagian atas halaman.
+class _WaveClipper extends CustomClipper<Path> {
+  final bool back;
+
+  _WaveClipper({this.back = false});
+
+  @override
+  Path getClip(Size size) {
+    final h = size.height;
+    final w = size.width;
+    final path = Path()..lineTo(0, h - 55);
+    if (back) {
+      path.quadraticBezierTo(w * 0.30, h + 5, w * 0.62, h - 35);
+      path.quadraticBezierTo(w * 0.85, h - 62, w, h - 18);
+    } else {
+      path.quadraticBezierTo(w * 0.25, h + 8, w * 0.52, h - 28);
+      path.quadraticBezierTo(w * 0.80, h - 62, w, h - 22);
+    }
+    path
+      ..lineTo(w, 0)
+      ..close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
